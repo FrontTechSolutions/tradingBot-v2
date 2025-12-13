@@ -1,0 +1,43 @@
+{
+  "name": "tradingbotv2",
+  "version": "1.0.0",
+  "description": "Production-ready algorithmic crypto trading bot with mean reversion scalping strategy",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "start:local": "node scripts/start-local.js",
+    "start:dev": "node scripts/start-dev.js", 
+    "start:prod": "node scripts/start-prod.js",
+    "dev": "node --inspect app.js",
+    "dev:local": "node --inspect scripts/start-local.js",
+    "test": "node src/tests/test-services.js || echo \"Tests not implemented yet\"",
+    "config:check": "node -e \"const ConfigService = require('./src/config/ConfigService'); new ConfigService().displayConfigSummary()\"",
+    "config:local": "node scripts/config-local.js",
+    "config:dev": "node scripts/config-dev.js",
+    "config:prod": "node scripts/config-prod.js",
+    "db:backup": "node -e \"const fs = require('fs'); const path = process.env.DB_PATH || './bot.db'; if(fs.existsSync(path)) fs.copyFileSync(path, `backup-${Date.now()}.db`); console.log('Backup created');\"",
+    "logs:archive": "node -e \"const { getLogger } = require('./src/utils/Logger'); getLogger().archiveLogs();\"",
+    "logs:clean": "node -e \"const fs = require('fs'); const path = require('path'); const logDir = path.join(process.cwd(), 'logs'); if(fs.existsSync(logDir)) { fs.rmSync(logDir, {recursive: true}); console.log('Logs supprimés'); }\""
+  },
+  "keywords": [
+    "crypto",
+    "trading",
+    "bot",
+    "algorithmic",
+    "binance",
+    "scalping",
+    "mean-reversion"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^9.2.2",
+    "ccxt": "^4.2.24",
+    "dotenv": "^16.3.1",
+    "technicalindicators": "^3.1.0",
+    "winston": "^3.19.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

@@ -1,0 +1,5 @@
+@echo off
+echo 🚀 LANCEMENT DU BOT EN ENVIRONNEMENT PRODUCTION
+echo ⚠️  ATTENTION: ARGENT RÉEL EN JEU !
+set ENVIRONMENT=PROD
+node app.js

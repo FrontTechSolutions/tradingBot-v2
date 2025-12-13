@@ -1,0 +1,4 @@
+@echo off
+echo 🚀 LANCEMENT DU BOT EN ENVIRONNEMENT LOCAL
+set ENVIRONMENT=LOCAL
+node app.js

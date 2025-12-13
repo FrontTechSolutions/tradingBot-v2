@@ -1,0 +1,4 @@
+@echo off
+echo 🚀 LANCEMENT DU BOT EN ENVIRONNEMENT DEV
+set ENVIRONMENT=DEV
+node app.js

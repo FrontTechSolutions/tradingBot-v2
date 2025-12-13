@@ -1,0 +1,4 @@
+@echo off
+echo 🔧 VÉRIFICATION CONFIGURATION ENVIRONNEMENT DEV
+set ENVIRONMENT=DEV
+npm run config:check

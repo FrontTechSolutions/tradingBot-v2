@@ -121,7 +121,7 @@ class DatabaseService {
             getTradeStats: this.db.prepare(`
                 SELECT 
                     COUNT(*) as total_trades,
-                    SUM(CASE WHEN side = 'BUY' THEN quantity * price ELSE -quantity * price END) as total_pnl,
+                    SUM(CASE WHEN side = 'SELL' THEN quantity * price ELSE -quantity * price END) as total_pnl,
                     COUNT(CASE WHEN side = 'BUY' THEN 1 END) as buy_trades,
                     COUNT(CASE WHEN side = 'SELL' THEN 1 END) as sell_trades
                 FROM trade_history

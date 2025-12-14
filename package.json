@@ -15,6 +15,7 @@
     "config:local": "node scripts/config-local.js",
     "config:dev": "node scripts/config-dev.js",
     "config:prod": "node scripts/config-prod.js",
+    "stats": "node scripts/show-stats.js",
     "db:backup": "node -e \"const fs = require('fs'); const path = process.env.DB_PATH || './bot.db'; if(fs.existsSync(path)) fs.copyFileSync(path, `backup-${Date.now()}.db`); console.log('Backup created');\"",
     "logs:archive": "node -e \"const { getLogger } = require('./src/utils/Logger'); getLogger().archiveLogs();\"",
     "logs:clean": "node -e \"const fs = require('fs'); const path = require('path'); const logDir = path.join(process.cwd(), 'logs'); if(fs.existsSync(logDir)) { fs.rmSync(logDir, {recursive: true}); console.log('Logs supprimés'); }\""

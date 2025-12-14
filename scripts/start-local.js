@@ -8,19 +8,22 @@
 process.env.ENVIRONMENT = 'LOCAL';
 process.env.NODE_ENV = 'LOCAL';
 
-this.logger.info('🔧 Lancement du bot en mode LOCAL');
-this.logger.info('📊 Base de données : db/trading-local.db');
-this.logger.info('💱 Mode : TESTNET (sécurisé)');
-this.logger.info('💰 Montant : 10 USDC par trade');
-this.logger.info('📝 Logs : DEBUG (verbeux)');
-this.logger.info('');
+const { getLogger } = require('../src/utils/Logger');
+const logger = getLogger();
+
+logger.info('🔧 Lancement du bot en mode LOCAL');
+logger.info('📊 Base de données : db/trading-local.db');
+logger.info('💱 Mode : TESTNET (sécurisé)');
+logger.info('💰 Montant : 10 USDC par trade');
+logger.info('📝 Logs : DEBUG (verbeux)');
+logger.info('');
 
 // Lancer l'application principale
 try {
-    this.logger.info('🚀 Chargement de l\'application...');
+    logger.info('🚀 Chargement de l\'application...');
     const CryptoTradingBot = require('../app.js');
     
-    this.logger.info('🤖 Démarrage du bot...');
+    logger.info('🤖 Démarrage du bot...');
     
     // Créer et démarrer le bot
     async function startBot() {

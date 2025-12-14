@@ -1,11 +1,13 @@
 const fs = require('fs');
 const path = require('path');
+const { getLogger } = require('../utils/Logger');
 
 /**
  * Service de gestion de la configuration multi-environnements
  */
 class ConfigService {
     constructor() {
+        this.logger = getLogger();
         this.environment = this.detectEnvironment();
         this.loadEnvironmentFile();
         this.config = this.loadConfiguration();

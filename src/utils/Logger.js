@@ -25,7 +25,8 @@ if (!fs.existsSync(logFilePath)) {
 
 // Format de logs avec module
 const logFormat = printf(({ level, message, timestamp, module, stack, ...meta }) => {
-  const moduleFormatted = module ? `[${module.toUpperCase()}]`.padEnd(12) : '[SYSTEM]'.padEnd(12);
+  const moduleStr = (module && typeof module === 'string') ? module : 'SYSTEM';
+  const moduleFormatted = `[${moduleStr.toUpperCase()}]`.padEnd(12);
   const metaString = Object.keys(meta).length ? ` | ${JSON.stringify(meta)}` : '';
   return `${timestamp} ${moduleFormatted} [${level.toUpperCase()}]: ${stack || message}${metaString}`;
 });
@@ -63,20 +64,31 @@ class Logger {
         this.winston = winstonLogger;
     }
 
-    error(module, message, data = {}) {
-        this.winston.error(message, { module, ...data });
+    _log(level, moduleOrMessage, messageOrData, data = {}) {
+        if (typeof messageOrData === 'string') {
+            // Usage: (module, message, [data])
+            this.winston.log(level, messageOrData, { module: moduleOrMessage, ...data });
+        } else {
+            // Usage: (message, [meta])
+            const meta = messageOrData || {};
+            this.winston.log(level, moduleOrMessage, { module: 'SYSTEM', ...meta });
+        }
     }
 
-    warn(module, message, data = {}) {
-        this.winston.warn(message, { module, ...data });
+    error(moduleOrMessage, messageOrData, data = {}) {
+        this._log('error', moduleOrMessage, messageOrData, data);
     }
 
-    info(module, message, data = {}) {
-        this.winston.info(message, { module, ...data });
+    warn(moduleOrMessage, messageOrData, data = {}) {
+        this._log('warn', moduleOrMessage, messageOrData, data);
     }
 
-    debug(module, message, data = {}) {
-        this.winston.debug(message, { module, ...data });
+    info(moduleOrMessage, messageOrData, data = {}) {
+        this._log('info', moduleOrMessage, messageOrData, data);
+    }
+
+    debug(moduleOrMessage, messageOrData, data = {}) {
+        this._log('debug', moduleOrMessage, messageOrData, data);
     }
 
     setLevel(level) {

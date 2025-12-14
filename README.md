@@ -1,5 +1,18 @@
 # 🤖 Trading Bot v2 - Architecture Modulaire
 
+  - Pour démarrer l'application en mode développement :
+    ```bash
+    pm2 start tbv2-dev
+    pm2 save
+    ```
+
+  - Pour démarrer l'application en mode développement :
+    ```bash
+    pm2 start tbv2-prod
+    pm2 save
+    ```
+  
+
 > **Bot de trading crypto automatisé avec Bollinger Bands + RSI et support OCO**
 
 ## 🚀 **Transformation Architecturale Complète**

@@ -217,7 +217,7 @@ class TradingService {
         }
 
         // Mode indicateurs : attendre le signal de vente
-        if (this.config.tradingMode === 'INDICATORS') {
+        if (this.config.trading.tradingMode === 'INDICATORS') {
             await this.handleIndicatorBasedExit(signalAnalysis, marketData, indicators, currentPosition);
         } else {
             // Vérification des conditions d'urgence
@@ -229,10 +229,19 @@ class TradingService {
      * Gestion de sortie basée sur les indicateurs (Bollinger + RSI)
      */
     async handleIndicatorBasedExit(signalAnalysis, marketData, indicators, currentPosition) {
-        // Mise à jour du plus haut pour le trailing stop
         const currentPrice = marketData.ticker.last;
-        if (currentPrice > this.highestPriceInPosition) {
-            this.highestPriceInPosition = currentPrice;
+        
+        // 1. Gestion du Highest Price (High Water Mark) persistant
+        // Si highestPrice n'est pas défini (vieux trades), on l'initialise au prix d'achat
+        if (!currentPosition.highestPrice) {
+            currentPosition.highestPrice = currentPosition.buyPrice;
+        }
+
+        // Si le prix actuel dépasse le plus haut connu, on met à jour et on sauvegarde
+        if (currentPrice > currentPosition.highestPrice) {
+            this.logger.info(`[TRADING] 🚀 Nouveau sommet atteint: ${currentPrice} (Ancien: ${currentPosition.highestPrice})`);
+            currentPosition.highestPrice = currentPrice;
+            this.databaseService.savePosition(currentPosition);
         }
 
         // Vérifications de sécurité d'abord
@@ -243,19 +252,41 @@ class TradingService {
             return;
         }
 
-        // Vérification "Secure Profit" (Trailing Stop manuel)
-        // Si gain > trigger et chute de drop depuis le plus haut
-        const unrealizedPnL = currentPosition.getUnrealizedPnLPercent(currentPrice);
-        const dropFromHigh = ((this.highestPriceInPosition - currentPrice) / this.highestPriceInPosition) * 100;
-        
-        const triggerPercent = this.config.trading.secureProfitTrigger || 1.5;
-        const dropPercent = this.config.trading.secureProfitDrop || 0.5;
-
-        if (unrealizedPnL >= triggerPercent && dropFromHigh >= dropPercent) {
-            this.logger.info(`[TRADING] 🛡️ SECURE PROFIT: Gain ${unrealizedPnL.toFixed(2)}% > ${triggerPercent}% ET Chute ${dropFromHigh.toFixed(2)}% >= ${dropPercent}%`);
+        // 2. VÉRIFICATION DU STOP LOSS FIXE
+        // Cas A : Prix fixe enregistré en DB (Prioritaire)
+        if (currentPosition.stopLossPrice && currentPrice <= currentPosition.stopLossPrice) {
+            this.logger.info(`[TRADING] 🛑 STOP LOSS FIXE ATTEINT | Prix: ${currentPrice} <= Limite: ${currentPosition.stopLossPrice}`);
             await this.executeSellOrder(marketData.ticker.symbol, currentPosition.quantity, currentPrice, currentPosition);
-            this.highestPriceInPosition = 0; // Reset
             return;
+        }
+        
+        // Cas B : Pas de prix fixe (Vieux trades) -> On utilise le pourcentage de config
+        const unrealizedPnL = currentPosition.getUnrealizedPnLPercent(currentPrice);
+        const stopLossPercent = this.config.trading.stopLossPercent || 2.0;
+        
+        if (!currentPosition.stopLossPrice && unrealizedPnL <= -stopLossPercent) {
+            this.logger.info(`[TRADING] 🛑 STOP LOSS CONFIG ATTEINT | PnL: ${unrealizedPnL.toFixed(2)}% <= -${stopLossPercent}%`);
+            await this.executeSellOrder(marketData.ticker.symbol, currentPosition.quantity, currentPrice, currentPosition);
+            return;
+        }
+
+        // Vérification "Secure Profit" (Trailing Stop mathématique)
+        const dropFromHigh = ((currentPosition.highestPrice - currentPrice) / currentPosition.highestPrice) * 100;
+        
+        const triggerPercent = this.config.trading.secureProfitTrigger || 3.0; // Activation à 3% par défaut
+        const dropPercent = this.config.trading.secureProfitDrop || 0.5;       // Vente si chute de 0.5%
+
+        // Logique de Trailing Stop
+        if (unrealizedPnL >= triggerPercent) {
+            if (dropFromHigh >= dropPercent) {
+                this.logger.info(`[TRADING] 📉 TRAILING STOP DÉCLENCHÉ | Sommet: ${currentPosition.highestPrice} | Actuel: ${currentPrice} (-${dropFromHigh.toFixed(2)}% depuis top)`);
+                await this.executeSellOrder(marketData.ticker.symbol, currentPosition.quantity, currentPrice, currentPosition);
+                return;
+            } else {
+                // Log informatif pour suivre la montée
+                const sellPrice = currentPosition.highestPrice * (1 - dropPercent/100);
+                this.logger.info(`[TRADING] 🧗 Trailing actif | Profit: +${unrealizedPnL.toFixed(2)}% | Sommet: ${currentPosition.highestPrice} | Vente si < ${sellPrice.toFixed(4)}`);
+            }
         }
 
         // Attendre le signal des indicateurs

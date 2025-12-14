@@ -11,6 +11,7 @@ class Position {
         this.orderType = data.order_type || 'LIMIT'; // LIMIT ou OCO
         this.takeProfitPrice = data.take_profit_price || null;
         this.stopLossPrice = data.stop_loss_price || null;
+        this.highestPrice = data.highest_price || data.buy_price || null;
         this.createdAt = data.created_at || null;
         this.updatedAt = data.updated_at || null;
     }
@@ -58,6 +59,10 @@ class Position {
         this.orderType = data.orderType || 'LIMIT';
         this.takeProfitPrice = data.takeProfitPrice || null;
         this.stopLossPrice = data.stopLossPrice || null;
+        // AJOUT: Mise à jour de highestPrice
+        if (data.highestPrice) {
+            this.highestPrice = data.highestPrice;
+        }        
         this.createdAt = data.createdAt || Date.now();
         this.updatedAt = Date.now();
     }
@@ -126,6 +131,7 @@ class Position {
             order_type: this.orderType,
             take_profit_price: this.takeProfitPrice,
             stop_loss_price: this.stopLossPrice,
+            highest_price: this.highestPrice,
             created_at: this.createdAt,
             updated_at: this.updatedAt
         };

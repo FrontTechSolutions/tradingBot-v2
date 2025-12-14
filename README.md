@@ -15,11 +15,6 @@
 
 > **Bot de trading crypto automatisé avec Bollinger Bands + RSI et support OCO**
 
-## 🚀 **Transformation Architecturale Complète**
-
-**Avant** : Fichier monolithique de 850+ lignes  
-**Après** : Architecture modulaire professionnelle avec séparation par domaines
-
 ## 📁 **Structure du Projet**
 
 ```
@@ -46,6 +41,36 @@ tradingBot-v2/
 ├── 📋 WINSTON-LOGGING.md         # Guide Winston
 └── 📋 REFACTORING.md            # Documentation refactoring
 ```
+
+## 🧠 **Stratégies & Scénarios de Trading**
+
+Le bot utilise une approche hybride combinant analyse technique et gestion rigoureuse du risque.
+
+### 📥 Signal d'Achat (Entrée)
+*   **Condition :** Le prix touche ou traverse la **Bande de Bollinger Inférieure** ET le **RSI < 35** (configurable).
+*   **Logique :** Indique que l'actif est survendu (sous-évalué) et présente une forte probabilité de rebond technique (Mean Reversion).
+
+### 📤 Scénarios de Vente (Sortie)
+Le bot surveille 4 conditions de sortie en parallèle :
+
+#### 1. 🟢 Prise de Profit Technique (Standard)
+*   **Condition :** Le prix touche la **Bande de Bollinger Supérieure** ET le **RSI > 65**.
+*   **Logique :** Indique que l'actif est suracheté. Le bot vend pour encaisser les gains classiques selon l'analyse technique.
+
+#### 2. 🛡️ Sécurisation des Gains (Trailing Stop)
+*   **Condition :** Le profit dépasse **3%** (configurable) MAIS le prix chute de **0.5%** depuis son point le plus haut (*High Water Mark*).
+*   **Logique :** "Laisser courir les gains, couper quand ça se retourne".
+    *   *Exemple :* Le prix monte à +5%, puis redescend à +4.5%. Le bot vend immédiatement pour sécuriser ces 4.5% au lieu d'attendre que le RSI ne baisse.
+
+#### 3. 🛑 Stop Loss Fixe (Protection Capital)
+*   **Condition :** Le prix chute de **2%** (configurable) par rapport au prix d'achat initial.
+*   **Logique :** Filet de sécurité absolu. Si le trade part dans le mauvais sens dès le début, on coupe l'hémorragie immédiatement. Ce seuil est enregistré en base de données dès l'achat.
+
+#### 4. 🚨 Sortie d'Urgence (Crash)
+*   **Condition :** Perte brutale de **5%** ou plus (configurable).
+*   **Logique :** Protection contre les crashs de marché soudains (Flash Crash). Vente au marché immédiate.
+
+---
 
 ## ⚡ **Démarrage Rapide**
 

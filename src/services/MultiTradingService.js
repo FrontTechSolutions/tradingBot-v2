@@ -171,15 +171,22 @@ class MultiTradingService {
             
             // 3. Filtrer et prioriser les signaux
             const buySignals = signals.filter(s => s.signal === 'BUY' && s.canTrade);
-            const sellSignals = signals.filter(s => s.signal === 'SELL');
             
-            this.logger.info(`🔍 Signaux détectés: ${buySignals.length} ACHAT, ${sellSignals.length} VENTE`);
+            // Identifier les positions actives (pour vérifier SL/TP/Trailing même sans signal de vente)
+            const activePositionSignals = signals.filter(s => {
+                const position = s.tradingService.databaseService.getPosition();
+                return position && position.isActive();
+            });
+            
+            this.logger.info(`🔍 Signaux détectés: ${buySignals.length} ACHAT`);
+            this.logger.info(`🔍 Positions actives à vérifier: ${activePositionSignals.length}`);
             
             // Récapitulatif des positions
             this.logActivePositionsSummary(signals);
             
-            // 4. Traiter les ventes en priorité (libère des slots)
-            for (const signal of sellSignals) {
+            // 4. Gérer les positions existantes (Stop Loss, Trailing Stop, Vente technique)
+            for (const signal of activePositionSignals) {
+                // On force le traitement pour vérifier les conditions de sortie (SL/TP)
                 await this.processSinglePair(signal.symbol, signal.tradingService);
             }
             

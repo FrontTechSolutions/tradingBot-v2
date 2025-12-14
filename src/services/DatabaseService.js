@@ -102,8 +102,8 @@ class DatabaseService {
             getPosition: this.db.prepare('SELECT * FROM position WHERE symbol = ?'),
             insertPosition: this.db.prepare(`
                 INSERT OR REPLACE INTO position 
-                (symbol, buy_price, quantity, buy_order_id, oco_order_list_id, order_type, take_profit_price, stop_loss_price, created_at, updated_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (symbol, buy_price, quantity, buy_order_id, oco_order_list_id, order_type, take_profit_price, stop_loss_price, highest_price, created_at, updated_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `),
             deletePosition: this.db.prepare('DELETE FROM position WHERE symbol = ?'),
             
@@ -183,6 +183,7 @@ class DatabaseService {
             data.order_type,
             data.take_profit_price,
             data.stop_loss_price,
+            data.highest_price,
             data.created_at,
             data.updated_at
         );

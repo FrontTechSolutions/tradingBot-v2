@@ -8,12 +8,12 @@
 process.env.ENVIRONMENT = 'DEV';
 process.env.NODE_ENV = 'DEV';
 
-console.log('🚀 Lancement du bot en mode DEV (Staging)');
-console.log('📊 Base de données : db/trading-dev.db');
-console.log('💱 Mode : TESTNET (sécurisé)');
-console.log('💰 Montant : 25 USDC par trade');
-console.log('📝 Logs : INFO avec monitoring');
-console.log('');
+this.logger.info('🚀 Lancement du bot en mode DEV (Staging)');
+this.logger.info('📊 Base de données : db/trading-dev.db');
+this.logger.info('💱 Mode : TESTNET (sécurisé)');
+this.logger.info('💰 Montant : 25 USDC par trade');
+this.logger.info('📝 Logs : INFO avec monitoring');
+this.logger.info('');
 
 // Lancer l'application principale
 require('../app.js');

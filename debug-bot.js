@@ -8,35 +8,35 @@
 process.env.ENVIRONMENT = 'LOCAL';
 process.env.NODE_ENV = 'LOCAL';
 
-console.log('🔍 Test de debug du bot...');
+this.logger.info('🔍 Test de debug du bot...');
 
 try {
-    console.log('1. Test import ConfigService...');
+    this.logger.info('1. Test import ConfigService...');
     const ConfigService = require('./src/config/ConfigService');
-    console.log('✅ ConfigService importé');
+    this.logger.info('✅ ConfigService importé');
     
-    console.log('2. Test création ConfigService...');
+    this.logger.info('2. Test création ConfigService...');
     const configService = new ConfigService();
-    console.log('✅ ConfigService créé');
+    this.logger.info('✅ ConfigService créé');
     
-    console.log('3. Test getConfig...');
+    this.logger.info('3. Test getConfig...');
     const config = configService.getConfig();
-    console.log('✅ Config obtenue');
+    this.logger.info('✅ Config obtenue');
     
-    console.log('4. Test import TradingService...');
+    this.logger.info('4. Test import TradingService...');
     const TradingService = require('./src/services/TradingService');
-    console.log('✅ TradingService importé');
+    this.logger.info('✅ TradingService importé');
     
-    console.log('5. Test import Logger...');
+    this.logger.info('5. Test import Logger...');
     const { getLogger } = require('./src/utils/Logger');
     const logger = getLogger();
-    console.log('✅ Logger créé');
+    this.logger.info('✅ Logger créé');
     
-    console.log('6. Test création TradingService...');
+    this.logger.info('6. Test création TradingService...');
     const tradingService = new TradingService(config);
-    console.log('✅ TradingService créé');
+    this.logger.info('✅ TradingService créé');
     
-    console.log('🎉 Tous les composants fonctionnent !');
+    this.logger.info('🎉 Tous les composants fonctionnent !');
     
 } catch (error) {
     console.error('❌ Erreur détectée:');

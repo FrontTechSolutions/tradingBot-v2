@@ -164,7 +164,7 @@ grep "\\[ERROR\\]" logs/trading-bot.log
 const logLine = "2025-12-12 15:16:54 [TRADING] [INFO]: Signal détecté | {\"rsi\":28.5}";
 const jsonPart = logLine.split(' | ')[1];
 const data = JSON.parse(jsonPart);
-console.log(data.rsi); // 28.5
+this.logger.info(data.rsi); // 28.5
 ```
 
 ## 🎯 **Avantages Winston vs Ancien Système**

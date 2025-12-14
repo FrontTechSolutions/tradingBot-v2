@@ -142,9 +142,9 @@ class IndicatorService {
         const priceAboveBB = currentPrice > indicators.bbUpper;
         const rsiOverbought = indicators.rsi > this.config.rsiOverbought;
 
-        console.log(`[SIGNAL] 📊 Analyse ==> ${symbol}: Prix=${currentPrice.toFixed(2)} | RSI=${indicators.rsi.toFixed(2)} | BB=[${indicators.bbLower.toFixed(2)} - ${indicators.bbUpper.toFixed(2)}]`);
-        console.log(`[SIGNAL] 🟢 Achat : ${priceBelowBB ? '✅' : '❌'} Prix sous BB Bas | ${rsiOversold ? '✅' : '❌'} RSI < ${this.config.rsiOversold}`);
-        console.log(`[SIGNAL] 🔴 Vente : ${priceAboveBB ? '✅' : '❌'} Prix sur BB Haut | ${rsiOverbought ? '✅' : '❌'} RSI > ${this.config.rsiOverbought}`);
+        this.logger.info(`[SIGNAL] 📊 Analyse ==> ${symbol}: Prix=${currentPrice.toFixed(2)} | RSI=${indicators.rsi.toFixed(2)} | BB=[${indicators.bbLower.toFixed(2)} - ${indicators.bbUpper.toFixed(2)}]`);
+        this.logger.info(`[SIGNAL] 🟢 Achat : ${priceBelowBB ? '✅' : '❌'} Prix sous BB Bas | ${rsiOversold ? '✅' : '❌'} RSI < ${this.config.rsiOversold}`);
+        this.logger.info(`[SIGNAL] 🔴 Vente : ${priceAboveBB ? '✅' : '❌'} Prix sur BB Haut | ${rsiOverbought ? '✅' : '❌'} RSI > ${this.config.rsiOverbought}`);
 
         let reason = '';
         if (buySignal) {

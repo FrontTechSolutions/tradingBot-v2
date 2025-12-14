@@ -3,7 +3,7 @@ const { getLogger, winston } = require('./src/utils/Logger');
 // Test du nouveau système de logging Winston
 const logger = getLogger();
 
-console.log('=== Test du Système de Logging Winston ===\n');
+this.logger.info('=== Test du Système de Logging Winston ===\n');
 
 // Test des niveaux de log avec modules
 logger.info('BOT', 'Démarrage du bot de trading');
@@ -36,10 +36,10 @@ winston.log('info', 'Message direct Winston', {
 logger.setLevel('debug');
 logger.debug('TEST', 'Ce message debug est maintenant visible');
 
-console.log('\n=== Logs sauvegardés dans ./logs/ ===');
-console.log('- Console : logs colorés et formatés');
-console.log('- Fichier : logs persistants avec rotation automatique');
-console.log('- Archive : rotation manuelle avec npm run logs:archive');
+this.logger.info('\n=== Logs sauvegardés dans ./logs/ ===');
+this.logger.info('- Console : logs colorés et formatés');
+this.logger.info('- Fichier : logs persistants avec rotation automatique');
+this.logger.info('- Archive : rotation manuelle avec npm run logs:archive');
 
 // Test de la rotation manuelle
 setTimeout(() => {

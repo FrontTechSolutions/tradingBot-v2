@@ -58,7 +58,7 @@ class ExchangeService {
             // Test des permissions en récupérant le solde
             await this.exchange.fetchBalance();
             
-            console.log(`[EXCHANGE] Connectivité vérifiée pour ${this.config.symbol}`);
+            this.logger.info(`[EXCHANGE] Connectivité vérifiée pour ${this.config.symbol}`);
         } catch (error) {
             throw new Error(`Vérification exchange échouée: ${error.message}`);
         }
@@ -117,7 +117,7 @@ class ExchangeService {
         try {
             const order = await this.exchange.createLimitBuyOrder(symbol, quantity, price);
             
-            console.log(`[EXCHANGE] Ordre d'achat placé: ${order.id} - ${quantity} ${symbol} à ${price}`);
+            this.logger.info(`[EXCHANGE] Ordre d'achat placé: ${order.id} - ${quantity} ${symbol} à ${price}`);
             
             return {
                 id: order.id,
@@ -144,7 +144,7 @@ class ExchangeService {
         try {
             const order = await this.exchange.createLimitSellOrder(symbol, quantity, price);
             
-            console.log(`[EXCHANGE] Ordre de vente placé: ${order.id} - ${quantity} ${symbol} à ${price}`);
+            this.logger.info(`[EXCHANGE] Ordre de vente placé: ${order.id} - ${quantity} ${symbol} à ${price}`);
             
             return {
                 id: order.id,
@@ -213,8 +213,8 @@ class ExchangeService {
             
             const order = await this.exchange.privatePostOrderOco(ocoParams);
             
-            console.log(`[EXCHANGE] Ordre OCO placé: ${order.orderListId} - ${side} ${quantity} ${symbol}`);
-            console.log(`[EXCHANGE] Take Profit: ${price}, Stop Loss: ${stopPrice}/${stopLimitPrice}`);
+            this.logger.info(`[EXCHANGE] Ordre OCO placé: ${order.orderListId} - ${side} ${quantity} ${symbol}`);
+            this.logger.info(`[EXCHANGE] Take Profit: ${price}, Stop Loss: ${stopPrice}/${stopLimitPrice}`);
             
             return {
                 orderListId: order.orderListId,
@@ -267,7 +267,7 @@ class ExchangeService {
                 orderListId: orderListId
             });
             
-            console.log(`[EXCHANGE] Ordre OCO annulé: ${orderListId}`);
+            this.logger.info(`[EXCHANGE] Ordre OCO annulé: ${orderListId}`);
             return result;
         } catch (error) {
             console.error(`[EXCHANGE] Erreur annulation OCO: ${error.message}`);
@@ -316,7 +316,7 @@ class ExchangeService {
         
         try {
             const result = await this.exchange.cancelOrder(orderId, symbol);
-            console.log(`[EXCHANGE] Ordre annulé: ${orderId}`);
+            this.logger.info(`[EXCHANGE] Ordre annulé: ${orderId}`);
             return result;
         } catch (error) {
             console.error(`[EXCHANGE] Erreur annulation ordre: ${error.message}`);
@@ -335,10 +335,10 @@ class ExchangeService {
                 const order = await this.fetchOrder(orderId, symbol);
                 
                 if (order.status === 'closed') {
-                    console.log(`[EXCHANGE] Ordre ${orderId} exécuté: ${order.filled} à ${order.average}`);
+                    this.logger.info(`[EXCHANGE] Ordre ${orderId} exécuté: ${order.filled} à ${order.average}`);
                     return order;
                 } else if (order.status === 'canceled' || order.status === 'rejected') {
-                    console.log(`[EXCHANGE] Ordre ${orderId} ${order.status}`);
+                    this.logger.info(`[EXCHANGE] Ordre ${orderId} ${order.status}`);
                     return null;
                 }
                 
@@ -351,7 +351,7 @@ class ExchangeService {
             }
         }
         
-        console.log(`[EXCHANGE] Timeout atteint pour l'ordre ${orderId}`);
+        this.logger.info(`[EXCHANGE] Timeout atteint pour l'ordre ${orderId}`);
         return null;
     }
 
@@ -382,13 +382,13 @@ class ExchangeService {
                 const requiredQuote = quantity * price;
                 const availableQuote = balance[quote]?.free || 0;
                 
-                console.log(`[DEBUG] Solde ${quote}: ${availableQuote}, Requis: ${requiredQuote} (${quantity} x ${price})`);
-                console.log(`[DEBUG] Suffisant: ${availableQuote >= requiredQuote}`);
+                this.logger.info(`[DEBUG] Solde ${quote}: ${availableQuote}, Requis: ${requiredQuote} (${quantity} x ${price})`);
+                this.logger.info(`[DEBUG] Suffisant: ${availableQuote >= requiredQuote}`);
                 
                 return availableQuote >= requiredQuote;
             } else {
                 const availableBase = balance[base]?.free || 0;
-                console.log(`[DEBUG] Solde ${base}: ${availableBase}, Requis: ${quantity}`);
+                this.logger.info(`[DEBUG] Solde ${base}: ${availableBase}, Requis: ${quantity}`);
                 return availableBase >= quantity;
             }
         } catch (error) {
@@ -445,7 +445,7 @@ class ExchangeService {
         const precise = this.exchange.amountToPrecision(symbol, amount);
         const rounded = parseFloat(precise);
         
-        console.log(`[DEBUG] roundAmount: ${symbol}, amount=${amount}, precise=${precise}, rounded=${rounded}`);
+        this.logger.info(`[DEBUG] roundAmount: ${symbol}, amount=${amount}, precise=${precise}, rounded=${rounded}`);
         
         return rounded;
     }

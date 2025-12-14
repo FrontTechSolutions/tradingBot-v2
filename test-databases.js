@@ -9,13 +9,13 @@ const fs = require('fs');
 const ConfigService = require('./src/config/ConfigService');
 const DatabaseService = require('./src/services/DatabaseService');
 
-console.log('🗄️ TEST DES BASES DE DONNÉES PAR ENVIRONNEMENT\n');
+this.logger.info('🗄️ TEST DES BASES DE DONNÉES PAR ENVIRONNEMENT\n');
 
 const environments = ['LOCAL', 'DEV', 'PROD'];
 
 environments.forEach(env => {
-    console.log(`📊 ENVIRONNEMENT: ${env}`);
-    console.log('─'.repeat(50));
+    this.logger.info(`📊 ENVIRONNEMENT: ${env}`);
+    this.logger.info('─'.repeat(50));
     
     // Configuration temporaire
     process.env.ENVIRONMENT = env;
@@ -25,43 +25,43 @@ environments.forEach(env => {
         const config = configService.getConfig();
         const dbPath = config.bot.dbPath;
         
-        console.log(`📁 Chemin DB configuré  : ${dbPath}`);
-        console.log(`📍 Chemin DB absolu     : ${path.resolve(dbPath)}`);
-        console.log(`📋 Existe déjà          : ${fs.existsSync(dbPath) ? '✅ OUI' : '❌ NON'}`);
+        this.logger.info(`📁 Chemin DB configuré  : ${dbPath}`);
+        this.logger.info(`📍 Chemin DB absolu     : ${path.resolve(dbPath)}`);
+        this.logger.info(`📋 Existe déjà          : ${fs.existsSync(dbPath) ? '✅ OUI' : '❌ NON'}`);
         
         // Test de création/connexion
         const dbService = new DatabaseService(dbPath);
-        console.log(`🔗 Test connexion       : En cours...`);
+        this.logger.info(`🔗 Test connexion       : En cours...`);
         
         dbService.initialize();
-        console.log(`✅ Connexion réussie    : ${dbPath}`);
+        this.logger.info(`✅ Connexion réussie    : ${dbPath}`);
         
         // Vérifier les tables
         const botStatus = dbService.getBotStatus();
-        console.log(`📊 Statut bot           : ${botStatus ? botStatus.status : 'N/A'}`);
+        this.logger.info(`📊 Statut bot           : ${botStatus ? botStatus.status : 'N/A'}`);
         
         const stats = dbService.getTradeStats();
-        console.log(`📈 Trades enregistrés   : ${stats.total_trades}`);
+        this.logger.info(`📈 Trades enregistrés   : ${stats.total_trades}`);
         
         dbService.close();
-        console.log(`🔒 Connexion fermée     : OK`);
+        this.logger.info(`🔒 Connexion fermée     : OK`);
         
     } catch (error) {
-        console.log(`❌ Erreur              : ${error.message}`);
+        this.logger.info(`❌ Erreur              : ${error.message}`);
     }
     
-    console.log('');
+    this.logger.info('');
 });
 
-        console.log('🎯 RÉSUMÉ CHEMINS DE BASES DE DONNÉES:');
-        console.log('─'.repeat(60));
-        console.log(`🔧 LOCAL : C:\\Users\\elodi\\Documents\\workspace\\tradingBot-v2\\db\\trading-local.db`);
-        console.log(`🚀 DEV   : C:\\Users\\elodi\\Documents\\workspace\\tradingBot-v2\\db\\trading-dev.db`);
-        console.log(`🏭 PROD  : C:\\Users\\elodi\\Documents\\workspace\\tradingBot-v2\\db\\trading-prod.db`);console.log('\n💡 COMMANDES WINDOWS UTILES:');
-console.log('─'.repeat(60));
-console.log(`📁 Voir les DBs         : dir db\\*.db`);
-console.log(`🗑️  Supprimer DB locale  : del db\\trading-local.db`);
-console.log(`📋 Copier DB locale     : copy db\\trading-local.db db\\backup-local.db`);
-console.log(`📊 Taille des DBs       : for %f in (db\\*.db) do @echo %f: %~zf bytes`);
+        this.logger.info('🎯 RÉSUMÉ CHEMINS DE BASES DE DONNÉES:');
+        this.logger.info('─'.repeat(60));
+        this.logger.info(`🔧 LOCAL : C:\\Users\\elodi\\Documents\\workspace\\tradingBot-v2\\db\\trading-local.db`);
+        this.logger.info(`🚀 DEV   : C:\\Users\\elodi\\Documents\\workspace\\tradingBot-v2\\db\\trading-dev.db`);
+        this.logger.info(`🏭 PROD  : C:\\Users\\elodi\\Documents\\workspace\\tradingBot-v2\\db\\trading-prod.db`);this.logger.info('\n💡 COMMANDES WINDOWS UTILES:');
+this.logger.info('─'.repeat(60));
+this.logger.info(`📁 Voir les DBs         : dir db\\*.db`);
+this.logger.info(`🗑️  Supprimer DB locale  : del db\\trading-local.db`);
+this.logger.info(`📋 Copier DB locale     : copy db\\trading-local.db db\\backup-local.db`);
+this.logger.info(`📊 Taille des DBs       : for %f in (db\\*.db) do @echo %f: %~zf bytes`);
 
-console.log('\n' + '='.repeat(60));
+this.logger.info('\n' + '='.repeat(60));

@@ -99,14 +99,14 @@ class TradingService {
      */
     async processMarketTick() {
         if (this.isProcessing) {
-            console.log('[TRADING] Tick en cours, ignore...');
+            this.logger.info('[TRADING] Tick en cours, ignore...');
             return;
         }
 
         this.isProcessing = true;
         
         try {
-            console.log(`[TRADING] Analyse de ${this.config.trading.symbol}...`);
+            this.logger.info(`[TRADING] Analyse de ${this.config.trading.symbol}...`);
             
             // Récupération des données de marché
             const marketData = await this.getMarketData();
@@ -158,13 +158,13 @@ class TradingService {
             return;
         }
 
-        console.log('[TRADING] Signal d\'achat détecté!');
-        console.log(`[TRADING] ${signalAnalysis.reason}`);
-            console.log(`[TRADING] Mode de trading: ${this.config.trading.tradingMode}`);        try {
+        this.logger.info('[TRADING] Signal d\'achat détecté!');
+        this.logger.info(`[TRADING] ${signalAnalysis.reason}`);
+            this.logger.info(`[TRADING] Mode de trading: ${this.config.trading.tradingMode}`);        try {
             // Vérification des conditions de marché (désactivée pour tests)
             const advancedStats = this.indicatorService.calculateAdvancedStats(marketData.ohlcv);
             if (!this.indicatorService.isMarketConditionFavorable(indicators, advancedStats)) {
-                console.log('[TRADING] ⚠️  Conditions de marché défavorables, mais on continue pour les tests');
+                this.logger.info('[TRADING] ⚠️  Conditions de marché défavorables, mais on continue pour les tests');
                 // return; // Commenté pour permettre les tests
             }
 
@@ -173,7 +173,7 @@ class TradingService {
             const currentPrice = marketData.ticker.ask;  // Utiliser ask pour l'achat
             const quantity = tradeAmount / currentPrice;  // Quantité à acheter
             
-            console.log(`[DEBUG] Vérification fonds: ${tradeAmount} USDC à ${currentPrice} (ask) = ${quantity.toFixed(6)} ${this.config.trading.symbol.split('/')[0]}`);
+            this.logger.info(`[DEBUG] Vérification fonds: ${tradeAmount} USDC à ${currentPrice} (ask) = ${quantity.toFixed(6)} ${this.config.trading.symbol.split('/')[0]}`);
             
             const hasFunds = await this.exchangeService.hasSufficientBalance(
                 this.config.trading.symbol, 
@@ -183,7 +183,7 @@ class TradingService {
             );
 
             if (!hasFunds) {
-                console.log(`[TRADING] Fonds insuffisants: besoin ${tradeAmount} USDC, prix ${currentPrice}`);
+                this.logger.info(`[TRADING] Fonds insuffisants: besoin ${tradeAmount} USDC, prix ${currentPrice}`);
                 return;
             }
 
@@ -238,7 +238,7 @@ class TradingService {
         // Vérifications de sécurité d'abord
         const emergencyExit = this.checkEmergencyExitConditions(marketData.ticker, currentPosition);
         if (emergencyExit) {
-            console.log('[TRADING] SORTIE D\'URGENCE déclenchée!');
+            this.logger.info('[TRADING] SORTIE D\'URGENCE déclenchée!');
             await this.executeEmergencyExit(marketData.ticker.symbol, currentPosition);
             return;
         }
@@ -252,7 +252,7 @@ class TradingService {
         const dropPercent = this.config.trading.secureProfitDrop || 0.5;
 
         if (unrealizedPnL >= triggerPercent && dropFromHigh >= dropPercent) {
-            console.log(`[TRADING] 🛡️ SECURE PROFIT: Gain ${unrealizedPnL.toFixed(2)}% > ${triggerPercent}% ET Chute ${dropFromHigh.toFixed(2)}% >= ${dropPercent}%`);
+            this.logger.info(`[TRADING] 🛡️ SECURE PROFIT: Gain ${unrealizedPnL.toFixed(2)}% > ${triggerPercent}% ET Chute ${dropFromHigh.toFixed(2)}% >= ${dropPercent}%`);
             await this.executeSellOrder(marketData.ticker.symbol, currentPosition.quantity, currentPrice, currentPosition);
             this.highestPriceInPosition = 0; // Reset
             return;
@@ -260,17 +260,17 @@ class TradingService {
 
         // Attendre le signal des indicateurs
         if (!signalAnalysis.sellSignal) {
-            console.log(`[TRADING] En position - Attente signal: ${signalAnalysis.reason}`);
+            this.logger.info(`[TRADING] En position - Attente signal: ${signalAnalysis.reason}`);
             this.logPositionStatus(currentPosition, marketData.ticker, indicators);
             return;
         }
 
-        console.log('[TRADING] Signal de vente des indicateurs détecté!');
-        console.log(`[TRADING] ${signalAnalysis.reason}`);
+        this.logger.info('[TRADING] Signal de vente des indicateurs détecté!');
+        this.logger.info(`[TRADING] ${signalAnalysis.reason}`);
 
         try {
             if (!currentPosition.isActive()) {
-                console.log('[TRADING] Aucune position active trouvée');
+                this.logger.info('[TRADING] Aucune position active trouvée');
                 return;
             }
 
@@ -295,7 +295,7 @@ class TradingService {
     calculateOptimalOrderParams(ticker, side, baseQuantity) {
         let price, quantity;
 
-        console.log(`[DEBUG] calculateOptimalOrderParams: ${side}, baseQuantity=${baseQuantity}, ticker.ask=${ticker.ask}, ticker.bid=${ticker.bid}`);
+        this.logger.info(`[DEBUG] calculateOptimalOrderParams: ${side}, baseQuantity=${baseQuantity}, ticker.ask=${ticker.ask}, ticker.bid=${ticker.bid}`);
 
         if (side === 'buy') {
             // Pour un ordre d'achat, utiliser l'ask (prix de vente) avec une marge
@@ -307,11 +307,11 @@ class TradingService {
             quantity = this.exchangeService.roundAmount(this.config.trading.symbol, baseQuantity);
         }
 
-        console.log(`[DEBUG] Après calcul: price=${price}, quantity=${quantity}, valeur=${price * quantity}`);
+        this.logger.info(`[DEBUG] Après calcul: price=${price}, quantity=${quantity}, valeur=${price * quantity}`);
 
         // Vérification des limites du marché
         const limits = this.exchangeService.getSymbolLimits(this.config.trading.symbol);
-        console.log(`[DEBUG] Limites: amount.min=${limits.amount.min}, cost.min=${limits.cost.min}`);
+        this.logger.info(`[DEBUG] Limites: amount.min=${limits.amount.min}, cost.min=${limits.cost.min}`);
         
         if (quantity < limits.amount.min) {
             throw new Error(`Quantité trop faible: ${quantity} < ${limits.amount.min}`);
@@ -344,7 +344,7 @@ class TradingService {
                 await this.handleBuyOrderFilled(filledOrder);
             } else {
                 // Timeout ou échec
-                console.log(`[TRADING] Ordre d'achat non exécuté dans les temps: ${order.id}`);
+                this.logger.info(`[TRADING] Ordre d'achat non exécuté dans les temps: ${order.id}`);
                 await this.exchangeService.cancelOrder(order.id, symbol);
             }
 
@@ -366,7 +366,7 @@ class TradingService {
                 order = await this.executeOCOSellOrder(symbol, quantity, position);
                 
                 // Pour les ordres OCO, pas besoin d'attendre - ils se gèrent automatiquement
-                console.log(`[TRADING] Ordre OCO placé avec succès: ${order.orderListId}`);
+                this.logger.info(`[TRADING] Ordre OCO placé avec succès: ${order.orderListId}`);
                 return;
             } else {
                 // Ordre limite classique
@@ -385,7 +385,7 @@ class TradingService {
                 await this.handleSellOrderFilled(filledOrder, position);
             } else {
                 // Timeout ou échec
-                console.log(`[TRADING] Ordre de vente non exécuté dans les temps: ${order.id}`);
+                this.logger.info(`[TRADING] Ordre de vente non exécuté dans les temps: ${order.id}`);
                 await this.exchangeService.cancelOrder(order.id, symbol);
             }
 
@@ -412,7 +412,7 @@ class TradingService {
             buyPrice * (1 - this.config.ocoStopLossPercent / 100)
         );
         
-        console.log(`[TRADING] Création ordre OCO - TP: ${takeProfitPrice}, SL: ${stopLossPrice}`);
+        this.logger.info(`[TRADING] Création ordre OCO - TP: ${takeProfitPrice}, SL: ${stopLossPrice}`);
         
         // Placement de l'ordre OCO
         return await this.exchangeService.createSellOCOOrder(
@@ -454,7 +454,7 @@ class TradingService {
             // Sauvegarde en base de données (transaction)
             this.databaseService.executeBuyTransaction(null, position, trade);
 
-            console.log(`[TRADING] Achat exécuté: ${order.filled} ${this.config.trading.symbol} à ${order.average || order.price}`);
+            this.logger.info(`[TRADING] Achat exécuté: ${order.filled} ${this.config.trading.symbol} à ${order.average || order.price}`);
 
         } catch (error) {
             console.error(`[TRADING] Erreur traitement achat: ${error.message}`);
@@ -514,8 +514,8 @@ class TradingService {
             // Sauvegarde en base de données (transaction)
             this.databaseService.executeBuyTransaction(null, position, trade);
 
-            console.log(`[TRADING] Achat + OCO exécutés: ${order.filled} ${this.config.trading.symbol} à ${buyPrice}`);
-            console.log(`[TRADING] OCO configuré - TP: ${takeProfitPrice}, SL: ${stopLossPrice}`);
+            this.logger.info(`[TRADING] Achat + OCO exécutés: ${order.filled} ${this.config.trading.symbol} à ${buyPrice}`);
+            this.logger.info(`[TRADING] OCO configuré - TP: ${takeProfitPrice}, SL: ${stopLossPrice}`);
 
         } catch (error) {
             console.error(`[TRADING] Erreur traitement achat OCO: ${error.message}`);
@@ -582,13 +582,13 @@ class TradingService {
 
         // Stop-loss à -2%
         if (this.config.stopLossPercent && unrealizedPnL <= -this.config.stopLossPercent) {
-            console.log(`[TRADING] Stop-loss déclenché: ${unrealizedPnL.toFixed(2)}%`);
+            this.logger.info(`[TRADING] Stop-loss déclenché: ${unrealizedPnL.toFixed(2)}%`);
             // Ici, on pourrait forcer une vente immédiate
         }
 
         // Take-profit à +3%
         if (this.config.takeProfitPercent && unrealizedPnL >= this.config.takeProfitPercent) {
-            console.log(`[TRADING] Take-profit potentiel: ${unrealizedPnL.toFixed(2)}%`);
+            this.logger.info(`[TRADING] Take-profit potentiel: ${unrealizedPnL.toFixed(2)}%`);
         }
     }
 
@@ -598,15 +598,15 @@ class TradingService {
     logMarketInfo(ticker, indicators) {
         const priceInfo = `Prix: ${ticker.last}`;
         const indicatorInfo = indicators.isValid() ? indicators.toLogString() : 'Indicateurs: N/A';
-        console.log(`[TRADING] ${priceInfo}, ${indicatorInfo}`);
+        this.logger.info(`[TRADING] ${priceInfo}, ${indicatorInfo}`);
     }
 
     /**
      * Log les résultats d'un trade
      */
     logTradeResults(order, position, profit) {
-        console.log(`[TRADING] Vente exécutée: ${order.filled} ${this.config.trading.symbol} à ${order.average || order.price}`);
-        console.log(`[TRADING] Trade terminé. Profit: ${profit.amount.toFixed(6)} USDC (${profit.percent.toFixed(2)}%)`);
+        this.logger.info(`[TRADING] Vente exécutée: ${order.filled} ${this.config.trading.symbol} à ${order.average || order.price}`);
+        this.logger.info(`[TRADING] Trade terminé. Profit: ${profit.amount.toFixed(6)} USDC (${profit.percent.toFixed(2)}%)`);
     }
 
     /**
@@ -634,7 +634,7 @@ class TradingService {
      * Exécute un achat avec OCO automatique post-achat
      */
     async executeBuyOrderWithAutoOCO(symbol, quantity, price) {
-        console.log('[TRADING] Mode OCO: Achat + placement automatique OCO');
+        this.logger.info('[TRADING] Mode OCO: Achat + placement automatique OCO');
         
         const order = await this.exchangeService.createBuyOrder(symbol, quantity, price);
         const filledOrder = await this.exchangeService.waitForOrderFill(order.id, symbol, this.config.trading.orderTimeout);
@@ -642,7 +642,7 @@ class TradingService {
         if (filledOrder && filledOrder.status === 'closed') {
             await this.handleBuyOrderFilledWithOCO(filledOrder);
         } else {
-            console.log(`[TRADING] Ordre d'achat non exécuté dans les temps: ${order.id}`);
+            this.logger.info(`[TRADING] Ordre d'achat non exécuté dans les temps: ${order.id}`);
             await this.exchangeService.cancelOrder(order.id, symbol);
         }
     }
@@ -656,7 +656,7 @@ class TradingService {
             const ocoStatus = await this.exchangeService.fetchOCOOrder(position.ocoOrderListId);
             
             if (ocoStatus.listOrderStatus === 'ALL_DONE') {
-                console.log('[TRADING] Ordre OCO exécuté automatiquement!');
+                this.logger.info('[TRADING] Ordre OCO exécuté automatiquement!');
                 // Mettre à jour la base de données
                 this.databaseService.executeSellTransaction(
                     Trade.createOCOTrade(position.symbol, 'SELL', marketData.ticker.last, position.quantity, position.ocoOrderListId, 'AUTO')
@@ -665,7 +665,7 @@ class TradingService {
                 // Log du statut actuel
                 const currentPrice = marketData.ticker.last;
                 const unrealizedPnL = position.getUnrealizedPnLPercent(currentPrice);
-                console.log(`[TRADING] Position OCO active - P&L non réalisé: ${unrealizedPnL.toFixed(2)}%`);
+                this.logger.info(`[TRADING] Position OCO active - P&L non réalisé: ${unrealizedPnL.toFixed(2)}%`);
             }
         } catch (error) {
             console.error(`[TRADING] Erreur surveillance OCO: ${error.message}`);
@@ -683,7 +683,7 @@ class TradingService {
         
         // Stop-loss d'urgence
         if (unrealizedPnLPercent <= -this.config.emergencyStopLossPercent) {
-            console.log(`[TRADING] STOP-LOSS D'URGENCE: ${unrealizedPnLPercent.toFixed(2)}% <= -${this.config.emergencyStopLossPercent}%`);
+            this.logger.info(`[TRADING] STOP-LOSS D'URGENCE: ${unrealizedPnLPercent.toFixed(2)}% <= -${this.config.emergencyStopLossPercent}%`);
             return true;
         }
         
@@ -695,7 +695,7 @@ class TradingService {
      */
     async executeEmergencyExit(symbol, position) {
         try {
-            console.log('[TRADING] EXÉCUTION SORTIE D\'URGENCE...');
+            this.logger.info('[TRADING] EXÉCUTION SORTIE D\'URGENCE...');
             
             // Annuler les ordres OCO s'il y en a
             if (position.isOCOOrder()) {
@@ -709,7 +709,7 @@ class TradingService {
             
             const order = await this.exchangeService.createSellOrder(symbol, position.quantity, emergencyPrice);
             
-            console.log(`[TRADING] Ordre d'urgence placé: ${order.id}`);
+            this.logger.info(`[TRADING] Ordre d'urgence placé: ${order.id}`);
             
         } catch (error) {
             console.error(`[TRADING] ERREUR CRITIQUE sortie d'urgence: ${error.message}`);
@@ -723,14 +723,14 @@ class TradingService {
         const currentPrice = ticker.last;
         const unrealizedPnL = position.getUnrealizedPnLPercent(currentPrice);
         
-        console.log(`[TRADING] Position - P&L: ${unrealizedPnL.toFixed(2)}%, Prix: ${currentPrice}, ${indicators.toLogString()}`);
+        this.logger.info(`[TRADING] Position - P&L: ${unrealizedPnL.toFixed(2)}%, Prix: ${currentPrice}, ${indicators.toLogString()}`);
     }
 
     /**
      * Arrêt d'urgence - annule tous les ordres en cours
      */
     async emergencyStop() {
-        console.log('[TRADING] ARRÊT D\'URGENCE - Annulation des ordres...');
+        this.logger.info('[TRADING] ARRÊT D\'URGENCE - Annulation des ordres...');
         
         try {
             // Ici, on pourrait implémenter l'annulation de tous les ordres ouverts
@@ -739,7 +739,7 @@ class TradingService {
             //     await this.exchangeService.cancelOrder(order.id, this.config.trading.symbol);
             // }
             
-            console.log('[TRADING] Arrêt d\'urgence terminé');
+            this.logger.info('[TRADING] Arrêt d\'urgence terminé');
         } catch (error) {
             console.error(`[TRADING] Erreur arrêt d'urgence: ${error.message}`);
         }
@@ -750,9 +750,9 @@ class TradingService {
      */
     async displayWalletBalance() {
         try {
-            console.log('\n💰 ════════════════════════════════════════════════════════════════');
-            console.log('💼 PORTEFEUILLE BINANCE TESTNET');
-            console.log('💰 ════════════════════════════════════════════════════════════════');
+            this.logger.info('\n💰 ════════════════════════════════════════════════════════════════');
+            this.logger.info('💼 PORTEFEUILLE BINANCE TESTNET');
+            this.logger.info('💰 ════════════════════════════════════════════════════════════════');
             
             const balance = await this.exchangeService.fetchBalance();
             
@@ -765,7 +765,7 @@ class TradingService {
                     const free = balance[crypto].free || 0;
                     const used = balance[crypto].used || 0;
                     
-                    console.log(`💵 ${crypto.padEnd(6)}: Total: ${total.toFixed(6).padStart(12)} | Libre: ${free.toFixed(6).padStart(12)} | Bloqué: ${used.toFixed(6).padStart(12)}`);
+                    this.logger.info(`💵 ${crypto.padEnd(6)}: Total: ${total.toFixed(6).padStart(12)} | Libre: ${free.toFixed(6).padStart(12)} | Bloqué: ${used.toFixed(6).padStart(12)}`);
                 }
             });
             
@@ -774,16 +774,16 @@ class TradingService {
             const minBalance = this.config.security?.minBalanceUSDC || 5;
             
             if (USDCBalance >= minBalance) {
-                console.log(`\n✅ Solde USDC suffisant pour trader (${USDCBalance.toFixed(2)} >= ${minBalance} USDC)`);
+                this.logger.info(`\n✅ Solde USDC suffisant pour trader (${USDCBalance.toFixed(2)} >= ${minBalance} USDC)`);
             } else {
-                console.log(`\n⚠️  Solde USDC insuffisant pour trader (${USDCBalance.toFixed(2)} < ${minBalance} USDC)`);
+                this.logger.info(`\n⚠️  Solde USDC insuffisant pour trader (${USDCBalance.toFixed(2)} < ${minBalance} USDC)`);
             }
             
-            console.log('💰 ════════════════════════════════════════════════════════════════\n');
+            this.logger.info('💰 ════════════════════════════════════════════════════════════════\n');
             
         } catch (error) {
             console.error(`[WALLET] Erreur affichage portefeuille: ${error.message}`);
-            console.log('📱 Mode simulation - Pas d\'accès au portefeuille réel\n');
+            this.logger.info('📱 Mode simulation - Pas d\'accès au portefeuille réel\n');
         }
     }
 }

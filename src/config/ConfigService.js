@@ -36,11 +36,11 @@ class ConfigService {
         const envPath = path.join(process.cwd(), envFile);
 
         if (fs.existsSync(envPath)) {
-            console.log(`🔧 Chargement configuration: ${envFile}`);
+            this.logger.info(`🔧 Chargement configuration: ${envFile}`);
             require('dotenv').config({ path: envPath });
         } else {
             console.warn(`⚠️  Fichier de configuration manquant: ${envFile}`);
-            console.log(`📝 Créer le fichier ${envFile} depuis .env.example`);
+            this.logger.info(`📝 Créer le fichier ${envFile} depuis .env.example`);
             // Fallback vers .env générique
             require('dotenv').config();
         }
@@ -230,7 +230,7 @@ class ConfigService {
             throw new Error(`Configuration invalide: ${errors.join(', ')}`);
         }
 
-        console.log('[CONFIG] Configuration validée avec succès');
+        this.logger.info('[CONFIG] Configuration validée avec succès');
     }
 
     /**
@@ -286,7 +286,7 @@ class ConfigService {
             const oldValue = this.config[section][key];
             this.config[section][key] = value;
             
-            console.log(`[CONFIG] ${section}.${key}: ${oldValue} -> ${value}`);
+            this.logger.info(`[CONFIG] ${section}.${key}: ${oldValue} -> ${value}`);
             
             // Re-validation si nécessaire
             if (section === 'trading' || section === 'indicators') {
@@ -301,56 +301,56 @@ class ConfigService {
      * Affiche un résumé de la configuration multi-environnements (sans les secrets)
      */
     displayConfigSummary() {
-        console.log('\n🔧 ════════════════════════════════════════════════════════════════');
-        console.log(`📦 CONFIGURATION ENVIRONNEMENT: ${this.environment}`);
-        console.log('🔧 ════════════════════════════════════════════════════════════════');
+        this.logger.info('\n🔧 ════════════════════════════════════════════════════════════════');
+        this.logger.info(`📦 CONFIGURATION ENVIRONNEMENT: ${this.environment}`);
+        this.logger.info('🔧 ════════════════════════════════════════════════════════════════');
         
         // Environnement
-        console.log(`\n🌍 ENVIRONNEMENT:`);
-        console.log(`   Nom                    : ${this.config.environment.name}`);
-        console.log(`   Node.js ENV            : ${this.config.environment.nodeEnv}`);
-        console.log(`   Mode Production        : ${this.config.environment.isProduction ? '✅ OUI' : '❌ NON'}`);
-        console.log(`   Mode Développement     : ${this.config.environment.isDevelopment ? '✅ OUI' : '❌ NON'}`);
-        console.log(`   Debug activé           : ${this.config.environment.debugMode ? '✅ OUI' : '❌ NON'}`);
+        this.logger.info(`\n🌍 ENVIRONNEMENT:`);
+        this.logger.info(`   Nom                    : ${this.config.environment.name}`);
+        this.logger.info(`   Node.js ENV            : ${this.config.environment.nodeEnv}`);
+        this.logger.info(`   Mode Production        : ${this.config.environment.isProduction ? '✅ OUI' : '❌ NON'}`);
+        this.logger.info(`   Mode Développement     : ${this.config.environment.isDevelopment ? '✅ OUI' : '❌ NON'}`);
+        this.logger.info(`   Debug activé           : ${this.config.environment.debugMode ? '✅ OUI' : '❌ NON'}`);
         
         // Exchange
-        console.log(`\n💱 EXCHANGE (BINANCE):`);
-        console.log(`   Mode Testnet           : ${this.config.exchange.sandbox ? '✅ TESTNET' : '⚠️  PRODUCTION RÉELLE'}`);
-        console.log(`   API configurée         : ${this.config.exchange.apiKey ? '✅ OUI' : '❌ NON'}`);
+        this.logger.info(`\n💱 EXCHANGE (BINANCE):`);
+        this.logger.info(`   Mode Testnet           : ${this.config.exchange.sandbox ? '✅ TESTNET' : '⚠️  PRODUCTION RÉELLE'}`);
+        this.logger.info(`   API configurée         : ${this.config.exchange.apiKey ? '✅ OUI' : '❌ NON'}`);
         
         // Trading
-        console.log(`\n📊 CONFIGURATION TRADING:`);
-        console.log(`   Paire                  : ${this.config.trading.symbol}`);
-        console.log(`   Timeframe              : ${this.config.trading.timeframe}`);
-        console.log(`   Montant par trade      : ${this.config.trading.amount} USDC`);
-        console.log(`   Mode de trading        : ${this.config.trading.tradingMode}`);
-        console.log(`   Stop Loss              : ${this.config.trading.stopLossPercent || 'N/A'}%`);
-        console.log(`   Take Profit            : ${this.config.trading.takeProfitPercent || 'N/A'}%`);
-        console.log(`   Stop Loss d'urgence    : ${this.config.trading.emergencyStopLossPercent}%`);
+        this.logger.info(`\n📊 CONFIGURATION TRADING:`);
+        this.logger.info(`   Paire                  : ${this.config.trading.symbol}`);
+        this.logger.info(`   Timeframe              : ${this.config.trading.timeframe}`);
+        this.logger.info(`   Montant par trade      : ${this.config.trading.amount} USDC`);
+        this.logger.info(`   Mode de trading        : ${this.config.trading.tradingMode}`);
+        this.logger.info(`   Stop Loss              : ${this.config.trading.stopLossPercent || 'N/A'}%`);
+        this.logger.info(`   Take Profit            : ${this.config.trading.takeProfitPercent || 'N/A'}%`);
+        this.logger.info(`   Stop Loss d'urgence    : ${this.config.trading.emergencyStopLossPercent}%`);
         
         // Sécurité
-        console.log(`\n🛡️  SÉCURITÉ ET LIMITES:`);
-        console.log(`   Positions max          : ${this.config.security.maxPositionCount}`);
-        console.log(`   Solde minimum          : ${this.config.security.minBalanceUSDC} USDC`);
-        console.log(`   Trades max/jour        : ${this.config.security.maxDailyTrades || 'Illimité'}`);
-        console.log(`   Perte max/jour         : ${this.config.security.maxDailyLoss ? this.config.security.maxDailyLoss + ' USDC' : 'Illimité'}`);
+        this.logger.info(`\n🛡️  SÉCURITÉ ET LIMITES:`);
+        this.logger.info(`   Positions max          : ${this.config.security.maxPositionCount}`);
+        this.logger.info(`   Solde minimum          : ${this.config.security.minBalanceUSDC} USDC`);
+        this.logger.info(`   Trades max/jour        : ${this.config.security.maxDailyTrades || 'Illimité'}`);
+        this.logger.info(`   Perte max/jour         : ${this.config.security.maxDailyLoss ? this.config.security.maxDailyLoss + ' USDC' : 'Illimité'}`);
         
         // Indicateurs
-        console.log(`\n📈 INDICATEURS TECHNIQUES:`);
-        console.log(`   RSI Période            : ${this.config.indicators.rsiPeriod}`);
-        console.log(`   RSI Seuils             : ${this.config.indicators.rsiOversold}-${this.config.indicators.rsiOverbought}`);
-        console.log(`   Bollinger Période      : ${this.config.indicators.bbPeriod}`);
-        console.log(`   Bollinger Écart-type   : ${this.config.indicators.bbStdDev}σ`);
+        this.logger.info(`\n📈 INDICATEURS TECHNIQUES:`);
+        this.logger.info(`   RSI Période            : ${this.config.indicators.rsiPeriod}`);
+        this.logger.info(`   RSI Seuils             : ${this.config.indicators.rsiOversold}-${this.config.indicators.rsiOverbought}`);
+        this.logger.info(`   Bollinger Période      : ${this.config.indicators.bbPeriod}`);
+        this.logger.info(`   Bollinger Écart-type   : ${this.config.indicators.bbStdDev}σ`);
         
         // Système
-        console.log(`\n⚙️  CONFIGURATION SYSTÈME:`);
-        console.log(`   Intervalle tick        : ${this.config.bot.tickInterval}ms (${Math.floor(this.config.bot.tickInterval/1000)}s)`);
-        console.log(`   Base de données        : ${this.config.bot.dbPath}`);
-        console.log(`   Niveau de log          : ${this.config.logging.level.toUpperCase()}`);
-        console.log(`   Logs verbeux           : ${this.config.logging.verboseLogs ? '✅ OUI' : '❌ NON'}`);
-        console.log(`   Monitoring perf        : ${this.config.monitoring.performanceMonitoring ? '✅ OUI' : '❌ NON'}`);
+        this.logger.info(`\n⚙️  CONFIGURATION SYSTÈME:`);
+        this.logger.info(`   Intervalle tick        : ${this.config.bot.tickInterval}ms (${Math.floor(this.config.bot.tickInterval/1000)}s)`);
+        this.logger.info(`   Base de données        : ${this.config.bot.dbPath}`);
+        this.logger.info(`   Niveau de log          : ${this.config.logging.level.toUpperCase()}`);
+        this.logger.info(`   Logs verbeux           : ${this.config.logging.verboseLogs ? '✅ OUI' : '❌ NON'}`);
+        this.logger.info(`   Monitoring perf        : ${this.config.monitoring.performanceMonitoring ? '✅ OUI' : '❌ NON'}`);
         
-        console.log('\n🔧 ════════════════════════════════════════════════════════════════\n');
+        this.logger.info('\n🔧 ════════════════════════════════════════════════════════════════\n');
         
         // Avertissements par environnement
         this.displayEnvironmentWarnings();
@@ -363,25 +363,25 @@ class ConfigService {
         switch (this.environment) {
             case 'PROD':
                 if (this.config.exchange.sandbox) {
-                    console.log('⚠️  ATTENTION: Testnet activé en PRODUCTION !');
+                    this.logger.info('⚠️  ATTENTION: Testnet activé en PRODUCTION !');
                 } else {
-                    console.log('🚨 PRODUCTION: ARGENT RÉEL EN JEU !');
+                    this.logger.info('🚨 PRODUCTION: ARGENT RÉEL EN JEU !');
                 }
                 break;
                 
             case 'DEV':
                 if (!this.config.exchange.sandbox) {
-                    console.log('⚠️  ATTENTION: API réelle en DEV, recommandé d\'utiliser TESTNET !');
+                    this.logger.info('⚠️  ATTENTION: API réelle en DEV, recommandé d\'utiliser TESTNET !');
                 } else {
-                    console.log('✅ DEV: Testnet activé, parfait pour les tests !');
+                    this.logger.info('✅ DEV: Testnet activé, parfait pour les tests !');
                 }
                 break;
                 
             case 'LOCAL':
                 if (!this.config.exchange.sandbox) {
-                    console.log('⚠️  ATTENTION: API réelle en LOCAL, utilisez TESTNET !');
+                    this.logger.info('⚠️  ATTENTION: API réelle en LOCAL, utilisez TESTNET !');
                 } else {
-                    console.log('✅ LOCAL: Testnet activé, parfait pour le développement !');
+                    this.logger.info('✅ LOCAL: Testnet activé, parfait pour le développement !');
                 }
                 break;
         }
@@ -404,7 +404,7 @@ class ConfigService {
         };
 
         fs.writeFileSync(filePath, JSON.stringify(exportData, null, 2));
-        console.log(`[CONFIG] Configuration exportée vers: ${filePath}`);
+        this.logger.info(`[CONFIG] Configuration exportée vers: ${filePath}`);
     }
 
     /**
@@ -421,7 +421,7 @@ class ConfigService {
         const passedChecks = Object.values(checks).filter(Boolean).length;
         const totalChecks = Object.keys(checks).length;
 
-        console.log(`[CONFIG] Vérifications sécurité: ${passedChecks}/${totalChecks}`);
+        this.logger.info(`[CONFIG] Vérifications sécurité: ${passedChecks}/${totalChecks}`);
         
         if (passedChecks < totalChecks) {
             console.warn('[CONFIG] Recommandations pour le trading en live:');

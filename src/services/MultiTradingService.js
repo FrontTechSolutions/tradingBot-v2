@@ -23,13 +23,13 @@ class MultiTradingService {
         
         const symbols = this.config.trading.symbols || [this.config.trading.symbol];
         
-        console.log(`\n🔄 ════════════════════════════════════════════════════════════════`);
-        console.log(`📊 INITIALISATION MULTI-PAIRES`);
-        console.log(`🔄 ════════════════════════════════════════════════════════════════`);
-        console.log(`💱 Paires à analyser : ${symbols.join(', ')}`);
-        console.log(`⏰ Timeframe : ${this.config.trading.timeframe}`);
-        console.log(`💰 Montant par trade : ${this.config.trading.amount} USDC`);
-        console.log(`🔄 ════════════════════════════════════════════════════════════════\n`);
+        this.logger.info(`\n🔄 ════════════════════════════════════════════════════════════════`);
+        this.logger.info(`📊 INITIALISATION MULTI-PAIRES`);
+        this.logger.info(`🔄 ════════════════════════════════════════════════════════════════`);
+        this.logger.info(`💱 Paires à analyser : ${symbols.join(', ')}`);
+        this.logger.info(`⏰ Timeframe : ${this.config.trading.timeframe}`);
+        this.logger.info(`💰 Montant par trade : ${this.config.trading.amount} USDC`);
+        this.logger.info(`🔄 ════════════════════════════════════════════════════════════════\n`);
         
         // Affichage du portefeuille une seule fois pour toutes les paires
         if (symbols.length > 0) {
@@ -44,7 +44,7 @@ class MultiTradingService {
         // Créer un service de trading pour chaque paire
         for (const symbol of symbols) {
             try {
-                console.log(`🔧 Initialisation de ${symbol}...`);
+                this.logger.info(`🔧 Initialisation de ${symbol}...`);
                 
                 // Configuration spécifique à cette paire
                 const pairConfig = {
@@ -60,7 +60,7 @@ class MultiTradingService {
                 await tradingService.initialize(false);
                 
                 this.tradingServices.set(symbol, tradingService);
-                console.log(`✅ ${symbol} initialisé avec succès`);
+                this.logger.info(`✅ ${symbol} initialisé avec succès`);
                 
             } catch (error) {
                 console.error(`❌ Erreur initialisation ${symbol}: ${error.message}`);
@@ -68,7 +68,7 @@ class MultiTradingService {
             }
         }
 
-        console.log(`\n🚀 ${this.tradingServices.size} paire(s) prête(s) pour le trading\n`);
+        this.logger.info(`\n🚀 ${this.tradingServices.size} paire(s) prête(s) pour le trading\n`);
         this.logger.info('MULTI-TRADING', `${this.tradingServices.size} paires initialisées`);
     }
 
@@ -79,7 +79,7 @@ class MultiTradingService {
         if (this.isRunning) return;
         
         this.isRunning = true;
-        console.log(`\n🎯 Démarrage du trading multi-paires...`);
+        this.logger.info(`\n🎯 Démarrage du trading multi-paires...`);
         
         // Premier cycle d'analyse
         await this.processAllPairs();
@@ -91,7 +91,7 @@ class MultiTradingService {
             }
         }, this.config.bot.tickInterval);
         
-        console.log(`✅ Trading multi-paires démarré (intervalle: ${this.config.bot.tickInterval}ms)`);
+        this.logger.info(`✅ Trading multi-paires démarré (intervalle: ${this.config.bot.tickInterval}ms)`);
     }
 
     /**
@@ -132,15 +132,15 @@ class MultiTradingService {
         }
 
         if (activePositions.length > 0) {
-            console.log(`\n📋 RÉCAPITULATIF DES POSITIONS (${activePositions.length})`);
-            console.log(`────────────────────────────────────────────────────────────────────────`);
+            this.logger.info(`\n📋 RÉCAPITULATIF DES POSITIONS (${activePositions.length})`);
+            this.logger.info(`────────────────────────────────────────────────────────────────────────`);
             activePositions.forEach(pos => {
                 const priceDisplay = pos.currentPrice ? pos.currentPrice : 'N/A';
-                console.log(`   🔹 ${pos.symbol.padEnd(8)} | Achat: ${pos.buyPrice} | Actuel: ${priceDisplay}${pos.pnlStr} | Qté: ${pos.quantity} | ${pos.date}`);
+                this.logger.info(`   🔹 ${pos.symbol.padEnd(8)} | Achat: ${pos.buyPrice} | Actuel: ${priceDisplay}${pos.pnlStr} | Qté: ${pos.quantity} | ${pos.date}`);
             });
-            console.log(`────────────────────────────────────────────────────────────────────────\n`);
+            this.logger.info(`────────────────────────────────────────────────────────────────────────\n`);
         } else {
-            console.log(`\n📋 Aucune position active en cours\n`);
+            this.logger.info(`\n📋 Aucune position active en cours\n`);
         }
     }
 
@@ -149,7 +149,7 @@ class MultiTradingService {
      */
     async processAllPairs() {
         if (this.isProcessing) {
-            console.log('[MULTI-TRADING] Analyse en cours, ignore ce cycle...');
+            this.logger.info('[MULTI-TRADING] Analyse en cours, ignore ce cycle...');
             return;
         }
 
@@ -157,14 +157,14 @@ class MultiTradingService {
         
         try {
             const timestamp = new Date().toLocaleTimeString();
-            console.log(`\n⏰ [${timestamp}] ═══ ANALYSE MULTI-PAIRES ═══`);
+            this.logger.info(`\n⏰ [${timestamp}] ═══ ANALYSE MULTI-PAIRES ═══`);
             
             // 1. Compter les positions actives
             const activeTrades = this.countActiveTrades();
             const maxTrades = this.config.trading.maxConcurrentTrades || 1;
             const availableSlots = maxTrades - activeTrades;
             
-            console.log(`📊 Positions: ${activeTrades}/${maxTrades} | Slots disponibles: ${availableSlots}`);
+            this.logger.info(`📊 Positions: ${activeTrades}/${maxTrades} | Slots disponibles: ${availableSlots}`);
             
             // 2. Analyser toutes les paires pour détecter les signaux
             const signals = await this.analyzeAllPairs();
@@ -173,7 +173,7 @@ class MultiTradingService {
             const buySignals = signals.filter(s => s.signal === 'BUY' && s.canTrade);
             const sellSignals = signals.filter(s => s.signal === 'SELL');
             
-            console.log(`🔍 Signaux détectés: ${buySignals.length} ACHAT, ${sellSignals.length} VENTE`);
+            this.logger.info(`🔍 Signaux détectés: ${buySignals.length} ACHAT, ${sellSignals.length} VENTE`);
             
             // Récapitulatif des positions
             this.logActivePositionsSummary(signals);
@@ -189,14 +189,14 @@ class MultiTradingService {
                 buySignals.sort((a, b) => a.rsi - b.rsi);
                 
                 const signalsToProcess = buySignals.slice(0, availableSlots);
-                console.log(`🎯 Traitement de ${signalsToProcess.length} signaux d'achat prioritaires`);
+                this.logger.info(`🎯 Traitement de ${signalsToProcess.length} signaux d'achat prioritaires`);
                 
                 for (const signal of signalsToProcess) {
                     await this.processSinglePair(signal.symbol, signal.tradingService);
                 }
             }
             
-            console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+            this.logger.info(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
             
         } catch (error) {
             console.error(`[MULTI-TRADING] Erreur analyse globale: ${error.message}`);
@@ -276,7 +276,7 @@ class MultiTradingService {
     async stop() {
         if (!this.isRunning) return;
         
-        console.log('\n🛑 Arrêt du trading multi-paires...');
+        this.logger.info('\n🛑 Arrêt du trading multi-paires...');
         this.isRunning = false;
         
         if (this.tickInterval) {
@@ -287,12 +287,12 @@ class MultiTradingService {
         // Arrêter tous les services de trading
         const stopPromises = [];
         for (const [symbol, tradingService] of this.tradingServices) {
-            console.log(`⏹️  Arrêt de ${symbol}...`);
+            this.logger.info(`⏹️  Arrêt de ${symbol}...`);
             stopPromises.push(tradingService.stop());
         }
         
         await Promise.all(stopPromises);
-        console.log('✅ Trading multi-paires arrêté');
+        this.logger.info('✅ Trading multi-paires arrêté');
         
         this.logger.info('MULTI-TRADING', 'Service arrêté');
     }
@@ -329,18 +329,18 @@ class MultiTradingService {
      * Affiche les statistiques de toutes les paires
      */
     displayStats() {
-        console.log(`\n📊 ═══ STATISTIQUES MULTI-PAIRES ═══`);
+        this.logger.info(`\n📊 ═══ STATISTIQUES MULTI-PAIRES ═══`);
         
         for (const [symbol, tradingService] of this.tradingServices) {
             try {
                 const stats = tradingService.getTradingStats();
-                console.log(`💱 ${symbol}: ${JSON.stringify(stats)}`);
+                this.logger.info(`💱 ${symbol}: ${JSON.stringify(stats)}`);
             } catch (error) {
-                console.log(`💱 ${symbol}: Erreur récupération stats`);
+                this.logger.info(`💱 ${symbol}: Erreur récupération stats`);
             }
         }
         
-        console.log(`════════════════════════════════════════════\n`);
+        this.logger.info(`════════════════════════════════════════════\n`);
     }
 
     /**

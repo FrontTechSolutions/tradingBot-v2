@@ -78,8 +78,7 @@ class CryptoTradingBot {
     
 ************************************************************************************************************************
 `;
-
-        console.log(startupMessage);
+        this.logger.info({ message: startupMessage });
         this.logger.info('BOT', 'Informations système affichées');
         
         configService.displayConfigSummary();
@@ -145,7 +144,7 @@ process.on('unhandledRejection', (reason) => {
 let bot = null;
 
 const shutdown = async (signal) => {
-    console.log(`\n${signal} reçu - Arrêt en cours...`);
+    this.logger.info(`\n${signal} reçu - Arrêt en cours...`);
     if (bot) await bot.stop();
     process.exit(0);
 };

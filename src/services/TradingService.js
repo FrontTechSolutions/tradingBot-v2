@@ -210,6 +210,33 @@ class TradingService {
      * Gère l'état IN_POSITION - selon le mode de trading
      */
     async handleInPositionState(signalAnalysis, marketData, indicators, currentPosition) {
+        // Vérification du stop-loss natif (ordre stop-loss placé sur l'exchange)
+        if (currentPosition.stopLossOrderId) {
+            try {
+                const stopOrder = await this.exchangeService.fetchOrderStatus(
+                    currentPosition.stopLossOrderId,
+                    currentPosition.symbol
+                );
+                if (stopOrder && (stopOrder.status === 'closed' || stopOrder.status === 'filled')) {
+                    this.logger.info(`[TRADING] Stop-loss exécuté automatiquement (orderId: ${currentPosition.stopLossOrderId})`);
+                    // Met à jour la position comme vendue
+                    currentPosition.close && currentPosition.close();
+                    this.databaseService.savePosition(currentPosition);
+                    // Crée le trade de sortie
+                    const trade = Trade.createSellTrade(
+                        currentPosition.symbol,
+                        stopOrder.price || marketData.ticker.last,
+                        currentPosition.quantity,
+                        currentPosition.stopLossOrderId
+                    );
+                    this.databaseService.executeSellTransaction(trade);
+                    return;
+                }
+            } catch (err) {
+                this.logger.info(`[TRADING] Erreur lors de la vérification du stop-loss natif: ${err.message}`);
+            }
+        }
+
         // Si position OCO, seule surveillance passive
         if (currentPosition.isOCOOrder()) {
             await this.monitorOCOPosition(currentPosition, marketData);
@@ -252,20 +279,12 @@ class TradingService {
             return;
         }
 
-        // 2. VÉRIFICATION DU STOP LOSS FIXE
-        // Cas A : Prix fixe enregistré en DB (Prioritaire)
-        if (currentPosition.stopLossPrice && currentPrice <= currentPosition.stopLossPrice) {
-            this.logger.info(`[TRADING] 🛑 STOP LOSS FIXE ATTEINT | Prix: ${currentPrice} <= Limite: ${currentPosition.stopLossPrice}`);
-            await this.executeSellOrder(marketData.ticker.symbol, currentPosition.quantity, currentPrice, currentPosition);
-            return;
-        }
-        
-        // Cas B : Pas de prix fixe (Vieux trades) -> On utilise le pourcentage de config
+        // 2. VÉRIFICATION DU STOP LOSS PAR POURCENTAGE UNIQUEMENT
+        //TODO ACTIF pour la retrocompatibilité à supprimer lors de la réinit de la BDD.
         const unrealizedPnL = currentPosition.getUnrealizedPnLPercent(currentPrice);
         const stopLossPercent = this.config.trading.stopLossPercent || 2.0;
-        
-        if (!currentPosition.stopLossPrice && unrealizedPnL <= -stopLossPercent) {
-            this.logger.info(`[TRADING] 🛑 STOP LOSS CONFIG ATTEINT | PnL: ${unrealizedPnL.toFixed(2)}% <= -${stopLossPercent}%`);
+        if (unrealizedPnL <= -stopLossPercent) {
+            this.logger.info(`[TRADING] 🛑 STOP LOSS ATTEINT | PnL: ${unrealizedPnL.toFixed(2)}% <= -${stopLossPercent}%`);
             await this.executeSellOrder(marketData.ticker.symbol, currentPosition.quantity, currentPrice, currentPosition);
             return;
         }
@@ -460,7 +479,6 @@ class TradingService {
     async handleBuyOrderFilled(order) {
         try {
             const now = Date.now();
-            
             // Reset du plus haut pour la nouvelle position
             this.highestPriceInPosition = order.average || order.price;
 
@@ -473,6 +491,26 @@ class TradingService {
                 buyOrderId: order.id,
                 createdAt: now
             });
+
+            // Ajout de la logique de stop-loss : calcul du prix stop-loss et placement de l'ordre
+            const stopLossPercent = this.config.trading.stopLossPercent || 2.0;
+            const stopLossPrice = (order.average || order.price) * (1 - stopLossPercent / 100);
+            this.logger.info(`[TRADING] Placement d'un stop-loss à ${stopLossPrice.toFixed(6)} (${stopLossPercent}% sous le prix d'achat)`);
+            // Si l'exchange supporte les ordres stop, placer ici l'ordre stop-loss
+            if (this.exchangeService.createStopLossOrder) {
+                try {
+                    await this.exchangeService.createStopLossOrder(
+                        this.config.trading.symbol,
+                        order.filled,
+                        stopLossPrice
+                    );
+                    this.logger.info(`[TRADING] Ordre stop-loss placé avec succès.`);
+                } catch (err) {
+                    this.logger.info(`[TRADING] Erreur lors du placement du stop-loss: ${err.message}`);
+                }
+            } else {
+                this.logger.info(`[TRADING] Exchange ne supporte pas createStopLossOrder, gestion logicielle.`);
+            }
 
             // Création du trade
             const trade = Trade.createBuyTrade(

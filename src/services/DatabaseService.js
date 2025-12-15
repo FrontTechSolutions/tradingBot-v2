@@ -65,7 +65,8 @@ class DatabaseService {
                 oco_order_list_id TEXT,
                 order_type TEXT DEFAULT 'LIMIT',
                 take_profit_price REAL,
-                stop_loss_price REAL,
+                highest_price REAL,
+                stop_loss_order_id TEXT,
                 created_at INTEGER,
                 updated_at INTEGER
             )
@@ -102,7 +103,7 @@ class DatabaseService {
             getPosition: this.db.prepare('SELECT * FROM position WHERE symbol = ?'),
             insertPosition: this.db.prepare(`
                 INSERT OR REPLACE INTO position 
-                (symbol, buy_price, quantity, buy_order_id, oco_order_list_id, order_type, take_profit_price, stop_loss_price, highest_price, created_at, updated_at) 
+                (symbol, buy_price, quantity, buy_order_id, oco_order_list_id, order_type, take_profit_price, highest_price, stop_loss_order_id, created_at, updated_at) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `),
             deletePosition: this.db.prepare('DELETE FROM position WHERE symbol = ?'),
@@ -182,8 +183,8 @@ class DatabaseService {
             data.oco_order_list_id,
             data.order_type,
             data.take_profit_price,
-            data.stop_loss_price,
             data.highest_price,
+            data.stop_loss_order_id,
             data.created_at,
             data.updated_at
         );

@@ -44,31 +44,33 @@ tradingBot-v2/
 
 ## 🧠 **Stratégies & Scénarios de Trading**
 
-Le bot utilise une approche hybride combinant analyse technique et gestion rigoureuse du risque.
+
+Le bot combine analyse technique et gestion du risque, avec une gestion moderne du stop-loss natif.
 
 ### 📥 Signal d'Achat (Entrée)
-*   **Condition :** Le prix touche ou traverse la **Bande de Bollinger Inférieure** ET le **RSI < 35** (configurable).
-*   **Logique :** Indique que l'actif est survendu (sous-évalué) et présente une forte probabilité de rebond technique (Mean Reversion).
+- **Condition :** Le prix touche ou traverse la **Bande de Bollinger Inférieure** ET le **RSI < 35** (configurable).
+- **Logique :** Indique un actif survendu, propice à un rebond technique (Mean Reversion).
 
 ### 📤 Scénarios de Vente (Sortie)
-Le bot surveille 4 conditions de sortie en parallèle :
+Le bot surveille plusieurs conditions de sortie :
 
 #### 1. 🟢 Prise de Profit Technique (Standard)
-*   **Condition :** Le prix touche la **Bande de Bollinger Supérieure** ET le **RSI > 65**.
-*   **Logique :** Indique que l'actif est suracheté. Le bot vend pour encaisser les gains classiques selon l'analyse technique.
+- **Condition :** Le prix touche la **Bande de Bollinger Supérieure** ET le **RSI > 65**.
+- **Logique :** Actif suracheté, vente pour encaisser les gains selon l'analyse technique.
 
 #### 2. 🛡️ Sécurisation des Gains (Trailing Stop)
-*   **Condition :** Le profit dépasse **3%** (configurable) MAIS le prix chute de **0.5%** depuis son point le plus haut (*High Water Mark*).
-*   **Logique :** "Laisser courir les gains, couper quand ça se retourne".
-    *   *Exemple :* Le prix monte à +5%, puis redescend à +4.5%. Le bot vend immédiatement pour sécuriser ces 4.5% au lieu d'attendre que le RSI ne baisse.
+- **Condition :** Le profit dépasse **3%** (configurable) MAIS le prix chute de **0.5%** depuis le plus haut (*High Water Mark*).
+- **Logique :** "Laisser courir les gains, couper quand ça se retourne".
+   - *Exemple :* Le prix monte à +5%, puis redescend à +4.5%. Le bot vend pour sécuriser ces 4.5%.
 
-#### 3. 🛑 Stop Loss Fixe (Protection Capital)
-*   **Condition :** Le prix chute de **2%** (configurable) par rapport au prix d'achat initial.
-*   **Logique :** Filet de sécurité absolu. Si le trade part dans le mauvais sens dès le début, on coupe l'hémorragie immédiatement. Ce seuil est enregistré en base de données dès l'achat.
+#### 3. 🛑 Stop Loss Natif (Protection Capital)
+- **Condition :** Un ordre stop-loss natif est placé dès l'achat (ex : -2% sous le prix d'entrée, configurable).
+- **Logique :** Si le marché part dans le mauvais sens, l'exchange exécute automatiquement la vente via l'ordre stop-loss. Le bot détecte l'exécution de cet ordre à chaque tick grâce à l'ID stocké en base.
+- **Remarque :** L'ancienne gestion logicielle par pourcentage reste active pour la rétrocompatibilité, mais sera supprimée à terme.
 
 #### 4. 🚨 Sortie d'Urgence (Crash)
-*   **Condition :** Perte brutale de **5%** ou plus (configurable).
-*   **Logique :** Protection contre les crashs de marché soudains (Flash Crash). Vente au marché immédiate.
+- **Condition :** Perte brutale de **5%** ou plus (configurable).
+- **Logique :** Protection contre les crashs soudains (Flash Crash). Vente au marché immédiate.
 
 ---
 

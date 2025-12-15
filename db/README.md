@@ -41,10 +41,12 @@ del db\trading-dev.db
 # ⚠️ JAMAIS supprimer trading-prod.db sans backup !
 ```
 
-## 📋 Schema des Tables
+## 📋 Schéma des Tables
 
-Chaque base de données contient :
+Chaque base de données contient :
 
-- **bot_status** - État actuel du bot (IDLE/IN_POSITION)
-- **position** - Position ouverte actuelle (avec support OCO)
-- **trade_history** - Historique complet des trades
+- **bot_status** — État actuel du bot (IDLE/IN_POSITION)
+- **position** — Position ouverte actuelle (avec support OCO et stop-loss natif)
+	- `highest_price` : plus haut atteint depuis l'achat (pour trailing stop)
+	- `stop_loss_order_id` : identifiant de l'ordre stop-loss natif placé sur l'exchange (permet de détecter si la position a été liquidée automatiquement)
+- **trade_history** — Historique complet des trades

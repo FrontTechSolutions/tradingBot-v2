@@ -3,7 +3,29 @@ const path = require('path');
 const fs = require('fs');
 
 // Configuration
-const DB_PATH = process.env.DB_PATH || './db/trading-local.db';
+let DB_PATH = process.env.DB_PATH;
+
+if (!DB_PATH) {
+    // Tentative de détection automatique
+    const rootDir = path.join(__dirname, '..');
+    const candidates = [
+        path.join(rootDir, 'db', 'trading-local.db'),
+        path.join(rootDir, 'db', 'trading-dev.db'),
+        path.join(rootDir, 'db', 'trading-prod.db')
+    ];
+    
+    for (const candidate of candidates) {
+        if (fs.existsSync(candidate)) {
+            DB_PATH = candidate;
+            break;
+        }
+    }
+    
+    // Défaut si rien trouvé
+    if (!DB_PATH) {
+        DB_PATH = path.join(rootDir, 'db', 'trading-local.db');
+    }
+}
 
 if (!fs.existsSync(DB_PATH)) {
     console.error(`❌ Base de données non trouvée: ${DB_PATH}`);
@@ -44,11 +66,21 @@ trades.forEach(trade => {
 const pnlColor = globalPnL >= 0 ? '\x1b[32m' : '\x1b[31m';
 const resetColor = '\x1b[0m';
 
+
+// Comptage des positions ouvertes (table position)
+let openPositionsNb = [];
+try {
+    openPositionsNb = db.prepare('SELECT * FROM position WHERE quantity > 0').all();
+} catch (e) {
+    // Table peut ne pas exister si jamais
+}
+
 console.log(`\n📈 GLOBAL:`);
 console.log(`   Trades Total : ${trades.length}`);
 console.log(`   Achats       : ${buyCount}`);
 console.log(`   Ventes       : ${sellCount}`);
 console.log(`   P&L Total    : ${pnlColor}${globalPnL.toFixed(2)} USDC${resetColor}`);
+console.log(`   Positions ouvertes : ${openPositionsNb.length}`);
 
 console.log(`\n📅 PAR JOUR:`);
 console.log('   Date       | Trades | P&L (USDC)');

@@ -35,9 +35,7 @@ class DatabaseService {
             // Initialise le statut par défaut si nécessaire
             if (this.symbol) {
                 this.initializeDefaultData();
-            }
-            
-            this.logger.info('DATABASE', 'Connexion initialisée', { dbPath: this.dbPath, symbol: this.symbol });
+            }                        
         } catch (error) {
             this.logger.error('DATABASE', 'Erreur d\'initialisation', { error: error.message });
             throw error;

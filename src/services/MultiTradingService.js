@@ -6,6 +6,40 @@ const { getLogger } = require('../utils/Logger');
  * Orchestre plusieurs instances de TradingService pour différentes paires
  */
 class MultiTradingService {
+        /**
+         * Vérifie l'exécution des ordres stop-loss natifs sur toutes les paires
+         * et met à jour la position si le stop-loss a été exécuté
+         */
+        async checkAllStopLossOrders() {
+            for (const [symbol, tradingService] of this.tradingServices) {
+                try {
+                    const position = tradingService.databaseService.getPosition();
+                    if (position && position.isActive() && position.stopLossOrderId) {
+                        const stopOrder = await tradingService.exchangeService.fetchOrderStatus(
+                            position.stopLossOrderId,
+                            symbol
+                        );
+                        if (stopOrder && (stopOrder.status === 'closed' || stopOrder.status === 'filled')) {
+                            this.logger.info(`[MULTI-TRADING] Stop-loss exécuté pour ${symbol} (orderId: ${position.stopLossOrderId})`);
+                            // Met à jour la position comme vendue
+                            position.close && position.close();
+                            tradingService.databaseService.savePosition(position);
+                            // Crée le trade de sortie
+                            const Trade = require('../models/Trade');
+                            const trade = Trade.createSellTrade(
+                                symbol,
+                                stopOrder.price || stopOrder.average || 0,
+                                position.quantity,
+                                position.stopLossOrderId
+                            );
+                            tradingService.databaseService.executeSellTransaction(trade);
+                        }
+                    }
+                } catch (err) {
+                    this.logger.info(`[MULTI-TRADING] Erreur vérification stop-loss natif pour ${symbol}: ${err.message}`);
+                }
+            }
+        }
     constructor(config) {
         this.config = config;
         this.logger = getLogger();
@@ -44,7 +78,7 @@ class MultiTradingService {
         // Créer un service de trading pour chaque paire
         for (const symbol of symbols) {
             try {
-                this.logger.info(`🔧 Initialisation de ${symbol}...`);
+
                 
                 // Configuration spécifique à cette paire
                 const pairConfig = {
@@ -148,63 +182,67 @@ class MultiTradingService {
      * Analyse toutes les paires avec gestion des trades simultanés
      */
     async processAllPairs() {
+        // Log d'appel pour debug (détecter les appels multiples)
         if (this.isProcessing) {
             this.logger.info('[MULTI-TRADING] Analyse en cours, ignore ce cycle...');
             return;
         }
 
         this.isProcessing = true;
-        
+
         try {
+            // Vérification des stop-loss natifs sur toutes les paires
+            await this.checkAllStopLossOrders();
+
             const timestamp = new Date().toLocaleTimeString();
             this.logger.info(`\n⏰ [${timestamp}] ═══ ANALYSE MULTI-PAIRES ═══`);
-            
+
             // 1. Compter les positions actives
             const activeTrades = this.countActiveTrades();
             const maxTrades = this.config.trading.maxConcurrentTrades || 1;
             const availableSlots = maxTrades - activeTrades;
-            
+
             this.logger.info(`📊 Positions: ${activeTrades}/${maxTrades} | Slots disponibles: ${availableSlots}`);
-            
+
             // 2. Analyser toutes les paires pour détecter les signaux
             const signals = await this.analyzeAllPairs();
-            
+
             // 3. Filtrer et prioriser les signaux
             const buySignals = signals.filter(s => s.signal === 'BUY' && s.canTrade);
-            
+
             // Identifier les positions actives (pour vérifier SL/TP/Trailing même sans signal de vente)
             const activePositionSignals = signals.filter(s => {
                 const position = s.tradingService.databaseService.getPosition();
                 return position && position.isActive();
             });
-            
+
             this.logger.info(`🔍 Signaux détectés: ${buySignals.length} ACHAT`);
             this.logger.info(`🔍 Positions actives à vérifier: ${activePositionSignals.length}`);
-            
+
             // Récapitulatif des positions
             this.logActivePositionsSummary(signals);
-            
+
             // 4. Gérer les positions existantes (Stop Loss, Trailing Stop, Vente technique)
             for (const signal of activePositionSignals) {
                 // On force le traitement pour vérifier les conditions de sortie (SL/TP)
                 await this.processSinglePair(signal.symbol, signal.tradingService);
             }
-            
+
             // 5. Traiter les achats selon les slots disponibles
             if (availableSlots > 0 && buySignals.length > 0) {
                 // Trier par force du signal (RSI le plus bas = meilleure opportunité)
                 buySignals.sort((a, b) => a.rsi - b.rsi);
-                
+
                 const signalsToProcess = buySignals.slice(0, availableSlots);
                 this.logger.info(`🎯 Traitement de ${signalsToProcess.length} signaux d'achat prioritaires`);
-                
+
                 for (const signal of signalsToProcess) {
                     await this.processSinglePair(signal.symbol, signal.tradingService);
                 }
             }
-            
+
             this.logger.info(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
-            
+
         } catch (error) {
             console.error(`[MULTI-TRADING] Erreur analyse globale: ${error.message}`);
         } finally {
@@ -332,23 +370,6 @@ class MultiTradingService {
         return globalStats;
     }
 
-    /**
-     * Affiche les statistiques de toutes les paires
-     */
-    displayStats() {
-        this.logger.info(`\n📊 ═══ STATISTIQUES MULTI-PAIRES ═══`);
-        
-        for (const [symbol, tradingService] of this.tradingServices) {
-            try {
-                const stats = tradingService.getTradingStats();
-                this.logger.info(`💱 ${symbol}: ${JSON.stringify(stats)}`);
-            } catch (error) {
-                this.logger.info(`💱 ${symbol}: Erreur récupération stats`);
-            }
-        }
-        
-        this.logger.info(`════════════════════════════════════════════\n`);
-    }
 
     /**
      * Récupère le service de trading pour une paire spécifique

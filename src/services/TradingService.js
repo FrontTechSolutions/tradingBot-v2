@@ -30,8 +30,6 @@ class TradingService {
      * Initialise tous les services nécessaires
      */
     async initialize(showWallet = true) {
-        this.logger.info('TRADING', 'Initialisation des services...');
-        
         // Base de données
         this.databaseService = new DatabaseService(this.config.bot.dbPath, this.config.trading.symbol);
         this.databaseService.initialize();
@@ -161,11 +159,11 @@ class TradingService {
         this.logger.info('[TRADING] Signal d\'achat détecté!');
         this.logger.info(`[TRADING] ${signalAnalysis.reason}`);
             this.logger.info(`[TRADING] Mode de trading: ${this.config.trading.tradingMode}`);        try {
-            // Vérification des conditions de marché (désactivée pour tests)
+            // Vérification des conditions de marché
             const advancedStats = this.indicatorService.calculateAdvancedStats(marketData.ohlcv);
             if (!this.indicatorService.isMarketConditionFavorable(indicators, advancedStats)) {
-                this.logger.info('[TRADING] ⚠️  Conditions de marché défavorables, mais on continue pour les tests');
-                // return; // Commenté pour permettre les tests
+                this.logger.info('[TRADING] ⚠️  Conditions de marché défavorables');
+                return; // Commenté pour permettre les tests
             }
 
             // Vérification du solde disponible
@@ -492,21 +490,25 @@ class TradingService {
                 createdAt: now
             });
 
-            // Ajout de la logique de stop-loss : calcul du prix stop-loss et placement de l'ordre
+            // Ajout de la logique de stop-loss natif : calcul du prix stop-loss et placement de l'ordre
             const stopLossPercent = this.config.trading.stopLossPercent || 2.0;
             const stopLossPrice = (order.average || order.price) * (1 - stopLossPercent / 100);
-            this.logger.info(`[TRADING] Placement d'un stop-loss à ${stopLossPrice.toFixed(6)} (${stopLossPercent}% sous le prix d'achat)`);
-            // Si l'exchange supporte les ordres stop, placer ici l'ordre stop-loss
+            this.logger.info(`[TRADING] Placement d'un stop-loss natif à ${stopLossPrice.toFixed(6)} (${stopLossPercent}% sous le prix d'achat)`);
             if (this.exchangeService.createStopLossOrder) {
                 try {
-                    await this.exchangeService.createStopLossOrder(
+                    const stopOrder = await this.exchangeService.createStopLossOrder(
                         this.config.trading.symbol,
                         order.filled,
                         stopLossPrice
                     );
-                    this.logger.info(`[TRADING] Ordre stop-loss placé avec succès.`);
+                    if (stopOrder && stopOrder.id) {
+                        position.stopLossOrderId = stopOrder.id;
+                        this.logger.info(`[TRADING] Ordre stop-loss natif placé avec succès. ID: ${stopOrder.id}`);
+                    } else {
+                        this.logger.info(`[TRADING] Avertissement: l'ID de l'ordre stop-loss n'a pas été récupéré.`);
+                    }
                 } catch (err) {
-                    this.logger.info(`[TRADING] Erreur lors du placement du stop-loss: ${err.message}`);
+                    this.logger.info(`[TRADING] Erreur lors du placement du stop-loss natif: ${err.message}`);
                 }
             } else {
                 this.logger.info(`[TRADING] Exchange ne supporte pas createStopLossOrder, gestion logicielle.`);
@@ -524,6 +526,9 @@ class TradingService {
             this.databaseService.executeBuyTransaction(null, position, trade);
 
             this.logger.info(`[TRADING] Achat exécuté: ${order.filled} ${this.config.trading.symbol} à ${order.average || order.price}`);
+            if (position.stopLossOrderId) {
+                this.logger.info(`[TRADING] ID de l'ordre stop-loss natif stocké dans la position: ${position.stopLossOrderId}`);
+            }
 
         } catch (error) {
             console.error(`[TRADING] Erreur traitement achat: ${error.message}`);

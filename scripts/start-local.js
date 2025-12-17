@@ -28,10 +28,7 @@ try {
     // Créer et démarrer le bot
     async function startBot() {
         const bot = new CryptoTradingBot();
-        await bot.start();
-        
-        // Stats toutes les 5 minutes
-        setInterval(() => bot.displayStats(), 300000);
+        await bot.start();        
     }
     
     startBot().catch(error => {

@@ -494,7 +494,7 @@ class TradingService {
             const stopLossPercent = this.config.trading.stopLossPercent || 2.0;
             const stopLossPrice = (order.average || order.price) * (1 - stopLossPercent / 100);
             this.logger.info(`[TRADING] Placement d'un stop-loss natif à ${stopLossPrice.toFixed(6)} (${stopLossPercent}% sous le prix d'achat)`);
-            if (this.exchangeService.createStopLossOrder) {
+            if (typeof this.exchangeService.createStopLossOrder === 'function') {
                 try {
                     const stopOrder = await this.exchangeService.createStopLossOrder(
                         this.config.trading.symbol,

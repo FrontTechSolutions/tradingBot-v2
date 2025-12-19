@@ -5,6 +5,49 @@ const { getLogger } = require('../utils/Logger');
  * Service de gestion de l'exchange (Binance)
  */
 class ExchangeService {
+
+        /**
+         * Place un ordre stop-loss natif (Binance spot)
+         * @param {string} symbol - Le symbole de trading (ex: 'BTC/USDT')
+         * @param {number} quantity - Quantité à vendre
+         * @param {number} stopPrice - Prix de déclenchement du stop
+         * @returns {Promise<object>} - Détails de l'ordre stop-loss
+         */
+        async createStopLossOrder(symbol, quantity, stopPrice) {
+            this.ensureInitialized();
+            try {
+                // Binance spot: type 'STOP_LOSS_LIMIT' nécessite un stopPrice et un prix limite
+                // On place le prix limite un peu sous le stopPrice pour maximiser l'exécution
+                const stopLimitPrice = this.roundPrice(symbol, stopPrice * 0.995);
+                const params = {
+                    stopPrice: this.roundPrice(symbol, stopPrice),
+                    timeInForce: 'GTC'
+                };
+                const order = await this.exchange.createOrder(
+                    symbol,
+                    'STOP_LOSS_LIMIT',
+                    'sell',
+                    this.roundAmount(symbol, quantity),
+                    stopLimitPrice,
+                    params
+                );
+                this.logger.info(`[EXCHANGE] Ordre stop-loss natif placé: ${order.id} - ${quantity} ${symbol} stop @ ${stopPrice} (limite ${stopLimitPrice})`);
+                return {
+                    id: order.id,
+                    symbol: order.symbol,
+                    side: order.side,
+                    type: order.type,
+                    amount: order.amount,
+                    price: order.price,
+                    stopPrice: params.stopPrice,
+                    status: order.status,
+                    timestamp: order.timestamp
+                };
+            } catch (error) {
+                this.logger.error(`[EXCHANGE] Erreur stop-loss natif: ${error.message}`);
+                throw error;
+            }
+        }
     constructor(config) {
         this.config = config;
         this.exchange = null;
